@@ -33,9 +33,7 @@ CORS(app)
 
 def get_user_summary():
     doc = db.collection('users').document('user_1').get()
-    if doc.exists:
-        return doc.to_dict()
-    return {
+    base = {
         "last_updated": None,
         "cycle_summary": {
             "average_cycle_length": 28,
@@ -55,8 +53,21 @@ def get_user_summary():
             "most_common_craving": None,
             "craving_phase": None
         },
-        "effective_interventions": []
+        "effective_interventions": [],
+        "intervention_summary": {
+            "most_effective": None,
+            "least_effective": None,
+            "total_tried": 0,
+            "favourite_category": None
+        }
     }
+    if doc.exists:
+        data = doc.to_dict()
+        # Ensure intervention_summary exists
+        if 'intervention_summary' not in data:
+            data['intervention_summary'] = base['intervention_summary']
+        return data
+    return base
 
 def update_user_summary():
     # Get all logs
@@ -89,6 +100,33 @@ def update_user_summary():
         cravings = [l['craving'] for l in diet_logs if l.get('craving')]
         if cravings:
             summary['diet_patterns']['most_common_craving'] = max(set(cravings), key=cravings.count)
+
+    # Update intervention patterns
+    intervention_logs = [d.to_dict() for d in db.collection('intervention_logs').stream()]
+    if intervention_logs:
+        # Most effective (highest average rating)
+        from collections import defaultdict
+        ratings_by_id = defaultdict(list)
+        categories_count = defaultdict(int)
+        for log in intervention_logs:
+            iid = log.get('intervention_id', log.get('intervention_name', ''))
+            rating = log.get('rating', 0)
+            if iid and rating:
+                ratings_by_id[iid].append(rating)
+            cat = log.get('intervention_type', '')
+            if cat:
+                categories_count[cat] += 1
+
+        if ratings_by_id:
+            avg_ratings = {k: sum(v)/len(v) for k, v in ratings_by_id.items()}
+            best = max(avg_ratings, key=avg_ratings.get)
+            worst = min(avg_ratings, key=avg_ratings.get)
+            summary['intervention_summary'] = {
+                'most_effective': best,
+                'least_effective': worst,
+                'total_tried': len(ratings_by_id),
+                'favourite_category': max(categories_count, key=categories_count.get) if categories_count else None
+            }
 
     summary['last_updated'] = datetime.now().strftime("%Y-%m-%d")
 
@@ -360,21 +398,46 @@ def rate_intervention():
     if isinstance(data, list):
         data = {item[0]: item[1] for item in data}
 
-    intervention = data.get('intervention', '')
-    rating = data.get('rating', 0)  # 1-5
+    intervention_id = data.get('intervention_id', '')
+    intervention_name = data.get('intervention_name', data.get('intervention', ''))
+    intervention_type = data.get('intervention_type', '')
+    rating = data.get('rating', 0)
+    phase = data.get('phase', 'unknown')
+    cycle_day = data.get('cycle_day', 0)
+    duration_seconds = data.get('duration_seconds', 0)
 
-    # If highly rated, add to effective interventions
+    # Save full log to intervention_logs
+    db.collection('intervention_logs').add({
+        'date': datetime.now().strftime("%Y-%m-%d %H:%M"),
+        'intervention_id': intervention_id,
+        'intervention_name': intervention_name,
+        'intervention_type': intervention_type,
+        'rating': rating,
+        'phase': phase,
+        'cycle_day': cycle_day,
+        'duration_seconds': duration_seconds
+    })
+
+    user_doc = db.collection('users').document('user_1').get()
+    user_data = user_doc.to_dict() if user_doc.exists else {}
+
     if rating >= 4:
-        user_doc = db.collection('users').document('user_1').get()
-        user_data = user_doc.to_dict() if user_doc.exists else {}
         effective = user_data.get('effective_interventions', [])
-        if intervention not in effective:
-            effective.append(intervention)
+        if intervention_name not in effective:
+            effective.append(intervention_name)
         db.collection('users').document('user_1').set({
             'effective_interventions': effective
         }, merge=True)
 
-    return jsonify({"message": "Rating saved", "rating": rating})
+    if rating <= 2:
+        ineffective = user_data.get('ineffective_interventions', [])
+        if intervention_name not in ineffective:
+            ineffective.append(intervention_name)
+        db.collection('users').document('user_1').set({
+            'ineffective_interventions': ineffective
+        }, merge=True)
+
+    return jsonify({"status": "ok", "message": "Thanks for rating \u2014 Kira will remember this"})
 
 @app.route('/health', methods=['GET'])
 def health():
@@ -454,9 +517,19 @@ def chat():
     - Never use bullet points or lists
     - Never sound like a doctor or therapist
     - Don't suggest an intervention until at least the 3rd message exchange unless needed
-    - If the user needs a visual intervention, end your message with 
+    - You have access to the user's historical patterns. When relevant, reference
+      that Kira has noticed patterns: e.g. 'I've noticed you tend to feel more
+      anxious in your luteal phase — is that what's happening now?' Use the
+      intervention library to make specific suggestions by name, e.g. 'Want to
+      try the 5-4-3-2-1 grounding exercise?' or 'The urge surfing timer might
+      help with that craving.'
+    - Most effective intervention for this user: {summary.get('intervention_summary', {}).get('most_effective', 'unknown')}
+    - Least effective intervention: {summary.get('intervention_summary', {}).get('least_effective', 'unknown')}
+    - Total interventions tried: {summary.get('intervention_summary', {}).get('total_tried', 0)}
+    - Favourite category: {summary.get('intervention_summary', {}).get('favourite_category', 'unknown')}
+    - If the user needs a visual intervention, end your message with
       exactly one of these tags on a new line:
-      [BREATHING] or [URGE_SURF] or [HAPTIC]
+      [BREATHING] or [URGE_SURF] or [HAPTIC] or [GROUNDING] or [JOURNAL]
     - Only suggest an intervention if it feels completely natural
     """
 
@@ -494,7 +567,7 @@ def chat():
     # Check if AI suggested an intervention
     intervention_trigger = None
     clean_message = ai_message
-    for tag in ['[BREATHING]', '[URGE_SURF]', '[HAPTIC]']:
+    for tag in ['[BREATHING]', '[URGE_SURF]', '[HAPTIC]', '[GROUNDING]', '[JOURNAL]']:
         if tag in ai_message:
             intervention_trigger = tag.strip('[]')
             clean_message = ai_message.replace(tag, '').strip()
@@ -563,6 +636,208 @@ def save_onboarding():
     }, merge=True)
 
     return jsonify({"status": "ok", "name": name})
+
+# ─── Intervention Library ───────────────────────────────────
+
+INTERVENTION_LIBRARY = {
+    "breathing": [
+        {"id": "box_breathing", "name": "Box Breathing", "description": "4-4-4-4 breath pattern to calm your nervous system", "duration": "4 min", "best_for": ["anxiety", "stress", "overwhelmed"], "icon": "\U0001f32c\ufe0f"}
+    ],
+    "urge_surfing": [
+        {"id": "urge_surf_5", "name": "5-Minute Urge Surf", "description": "Ride the wave of a craving without acting on it", "duration": "5 min", "best_for": ["craving", "irritability"], "icon": "\U0001f30a"},
+        {"id": "urge_surf_15", "name": "Deep Urge Surf", "description": "Extended craving timer with mindfulness prompts", "duration": "15 min", "best_for": ["craving"], "icon": "\U0001f30a"}
+    ],
+    "haptic": [
+        {"id": "haptic_calm", "name": "Calm Reset", "description": "Rhythmic vibration pattern to ground your nervous system", "duration": "2 min", "best_for": ["anxiety", "stress", "overwhelmed"], "icon": "\U0001f4f3"},
+        {"id": "haptic_energise", "name": "Energy Pulse", "description": "Gentle tapping pattern to lift low mood and energy", "duration": "2 min", "best_for": ["low_motivation", "tired"], "icon": "\u26a1"}
+    ],
+    "grounding": [
+        {"id": "54321", "name": "5-4-3-2-1 Grounding", "description": "Use your senses to anchor yourself to the present moment", "duration": "3 min", "best_for": ["anxiety", "rumination", "overwhelmed"], "icon": "\U0001f33f"},
+        {"id": "body_scan", "name": "Body Scan", "description": "A gentle scan from head to toe to release physical tension", "duration": "5 min", "best_for": ["stress", "anxiety", "low_motivation"], "icon": "\u2728"}
+    ],
+    "cognitive": [
+        {"id": "self_compassion", "name": "Self-Compassion Script", "description": "A guided script to soften self-criticism during difficult moments", "duration": "3 min", "best_for": ["shame", "rumination", "irritability"], "icon": "\U0001f49c"},
+        {"id": "cognitive_defusion", "name": "Thought Defusion", "description": "Create distance from unhelpful thoughts so they lose their grip", "duration": "4 min", "best_for": ["rumination", "anxiety", "shame"], "icon": "\U0001f52e"},
+        {"id": "delay_decide", "name": "Delay and Decide", "description": "Pause before acting on an urge or emotion with a structured prompt", "duration": "2 min", "best_for": ["craving", "irritability"], "icon": "\u23f8\ufe0f"}
+    ],
+    "journaling": [
+        {"id": "phase_reflect", "name": "Phase Reflection", "description": "Short guided journaling prompts tailored to your current cycle phase", "duration": "5 min", "best_for": ["low_motivation", "rumination", "social_sensitivity"], "icon": "\U0001f4d3"},
+        {"id": "gratitude_micro", "name": "Micro Gratitude", "description": "Three small things that went okay today \u2014 rewires negativity bias", "duration": "2 min", "best_for": ["low_motivation", "shame", "rumination"], "icon": "\U0001f338"}
+    ]
+}
+
+@app.route('/intervention_library', methods=['GET'])
+def intervention_library():
+    # Get user's ratings from intervention_logs
+    logs = [d.to_dict() for d in db.collection('intervention_logs').stream()]
+    user_doc = db.collection('users').document('user_1').get()
+    user_data = user_doc.to_dict() if user_doc.exists else {}
+    effective = user_data.get('effective_interventions', [])
+
+    # Calculate average ratings per intervention
+    from collections import defaultdict
+    ratings_by_id = defaultdict(list)
+    for log in logs:
+        iid = log.get('intervention_id', '')
+        rating = log.get('rating', 0)
+        if iid and rating:
+            ratings_by_id[iid].append(rating)
+
+    avg_ratings = {k: round(sum(v)/len(v), 1) for k, v in ratings_by_id.items()}
+
+    # Build response with user ratings attached
+    library = {}
+    for category, items in INTERVENTION_LIBRARY.items():
+        enriched = []
+        for item in items:
+            entry = dict(item)
+            entry['user_rating'] = avg_ratings.get(item['id'])
+            entry['times_used'] = len(ratings_by_id.get(item['id'], []))
+            entry['effective'] = item['name'] in effective
+            enriched.append(entry)
+        library[category] = enriched
+
+    return jsonify(library)
+
+
+@app.route('/personalised_intervention', methods=['GET'])
+def personalised_intervention():
+    emotion = request.args.get('emotion', '')
+    phase = request.args.get('phase', '')
+
+    # Fetch user's intervention logs
+    logs = [d.to_dict() for d in db.collection('intervention_logs').stream()]
+
+    # Find interventions rated >= 4 that match the emotion
+    from collections import defaultdict
+    good_for_emotion = defaultdict(list)
+    for log in logs:
+        rating = log.get('rating', 0)
+        iid = log.get('intervention_id', '')
+        if rating >= 4 and iid:
+            good_for_emotion[iid].append(rating)
+
+    personalised = []
+    # Check which of the user's well-rated interventions match the emotion
+    all_interventions = {}
+    for category, items in INTERVENTION_LIBRARY.items():
+        for item in items:
+            all_interventions[item['id']] = {**item, 'category': category}
+
+    for iid, ratings in good_for_emotion.items():
+        if iid in all_interventions:
+            info = all_interventions[iid]
+            if emotion in info.get('best_for', []):
+                personalised.append({
+                    **info,
+                    'avg_rating': round(sum(ratings)/len(ratings), 1),
+                    'reason': "Based on what's helped you before"
+                })
+
+    # Sort by average rating descending
+    personalised.sort(key=lambda x: x['avg_rating'], reverse=True)
+
+    # If not enough personalised, fill with defaults
+    if len(personalised) < 3:
+        for iid, info in all_interventions.items():
+            if emotion in info.get('best_for', []) and iid not in [p['id'] for p in personalised]:
+                personalised.append({
+                    **info,
+                    'avg_rating': None,
+                    'reason': "Popular for this phase"
+                })
+            if len(personalised) >= 3:
+                break
+
+    return jsonify({"recommendations": personalised[:3]})
+
+
+@app.route('/home_data', methods=['GET'])
+def home_data():
+    user_doc = db.collection('users').document('user_1').get()
+    if not user_doc.exists:
+        return jsonify({"error": "No user data"}), 400
+
+    user_data = user_doc.to_dict()
+    last_period = user_data.get('last_period_date')
+    avg_cycle = user_data.get('average_cycle_length', 28)
+
+    if not last_period:
+        return jsonify({"error": "No period data"}), 400
+
+    cycle = calculate_cycle_phase(last_period, avg_cycle)
+    phase = cycle['phase']
+
+    # Default tendencies
+    default_tendencies = {
+        "menstrual": ["Low energy", "Introspective", "Rest needed", "High sensitivity"],
+        "follicular": ["Rising energy", "Creative clarity", "Motivated", "Social openness"],
+        "ovulatory": ["Peak confidence", "High energy", "Communicative", "Assertive"],
+        "luteal": ["Higher sensitivity", "Craving intensity", "Lower energy", "Introspective"]
+    }
+
+    result = {**cycle, 'personalised': False}
+
+    # Check emotion logs for personalisation
+    emotion_logs = [d.to_dict() for d in db.collection('emotion_logs').stream()]
+    if len(emotion_logs) >= 14:
+        phase_emotions = [l['emotion'] for l in emotion_logs if l.get('phase') == phase]
+        if phase_emotions:
+            from collections import Counter
+            top_emotions = [e for e, _ in Counter(phase_emotions).most_common(3)]
+            result['tendencies'] = top_emotions
+            result['tendencies_note'] = "Based on your patterns"
+            result['personalised'] = True
+        else:
+            result['tendencies'] = default_tendencies.get(phase, [])
+            result['tendencies_note'] = "Typical for this phase"
+    else:
+        result['tendencies'] = default_tendencies.get(phase, [])
+        result['tendencies_note'] = "Typical for this phase"
+
+    # Check sleep logs
+    sleep_logs = [d.to_dict() for d in db.collection('sleep_logs').stream()]
+    phase_sleep = [l for l in sleep_logs if l.get('phase') == phase]
+    if phase_sleep:
+        avg_sleep = round(sum(l.get('hours', 0) for l in phase_sleep) / len(phase_sleep), 1)
+        result['sleep'] = {'average_hours': avg_sleep, 'personalised': True}
+    else:
+        phase_averages = {"menstrual": 6.5, "follicular": 7.2, "ovulatory": 7.0, "luteal": 6.8}
+        result['sleep'] = {'average_hours': phase_averages.get(phase, 7.0), 'personalised': False}
+
+    # Check diet logs
+    diet_logs = [d.to_dict() for d in db.collection('diet_logs').stream()]
+    phase_diet = [l for l in diet_logs if l.get('phase') == phase]
+    if phase_diet:
+        cravings = [l.get('craving', '') for l in phase_diet if l.get('craving')]
+        if cravings:
+            from collections import Counter
+            top_cravings = [c for c, _ in Counter(cravings).most_common(3)]
+            result['diet'] = {'top_cravings': top_cravings, 'personalised': True}
+        else:
+            result['diet'] = {'top_cravings': [], 'personalised': False}
+    else:
+        result['diet'] = {'top_cravings': [], 'personalised': False}
+
+    return jsonify(result)
+
+
+@app.route('/save_journal', methods=['POST'])
+def save_journal():
+    data = request.get_json(force=True)
+    if isinstance(data, list):
+        data = {item[0]: item[1] for item in data}
+
+    db.collection('journal_logs').add({
+        'date': datetime.now().strftime("%Y-%m-%d %H:%M"),
+        'prompt': data.get('prompt', ''),
+        'entry': data.get('entry', ''),
+        'phase': data.get('phase', 'unknown'),
+        'cycle_day': data.get('cycle_day', 0)
+    })
+
+    return jsonify({"status": "ok", "message": "Journal entry saved"})
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
