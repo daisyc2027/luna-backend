@@ -10,7 +10,13 @@ from flask_cors import CORS
 load_dotenv()
 
 # Initialize Firebase
-cred = credentials.Certificate("firebase_credentials.json")
+
+google_creds = os.getenv("GOOGLE_CREDENTIALS")
+if google_creds:
+    cred = credentials.Certificate(json.loads(google_creds))
+else:
+    cred = credentials.Certificate("firebase_credentials.json")
+
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
