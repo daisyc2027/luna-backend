@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Kira</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=DM+Sans:wght@300;400;500&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --rose: #e8a5b0;
+      --blush: #f2c4ce;
+      --lavender: #c9b8e8;
+      --deep: #2d1f35;
+      --card: rgba(255, 255, 255, 0.09);
+      --border: rgba(255, 255, 255, 0.14);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+      height: 100%;
+      background: var(--deep);
+      font-family: 'DM Sans', sans-serif;
+      color: white;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -30%;
+      left: -20%;
+      width: 70%;
+      height: 70%;
+      background: radial-gradient(circle, rgba(201, 184, 232, 0.22) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      bottom: -20%;
+      right: -20%;
+      width: 60%;
+      height: 60%;
+      background: radial-gradient(circle, rgba(232, 165, 176, 0.18) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page-wrapper {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      height: 100dvh;
+      position: relative;
+      z-index: 1;
+    }
+
+    .container {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 0 20px 20px;
+      max-width: 420px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* ── Header ── */
+    .header {
+      padding: 52px 0 22px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .greeting {
+      font-size: 12px;
+      font-weight: 300;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--blush);
+      opacity: 0.65;
+      margin-bottom: 4px;
+    }
+
+    .app-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 44px;
+      font-weight: 300;
+      font-style: italic;
+      color: white;
+      line-height: 1;
+      letter-spacing: -1px;
+    }
+
+    .date-badge {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 8px 14px;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.5);
+      letter-spacing: 1px;
+      backdrop-filter: blur(10px);
+      margin-top: 10px;
+      white-space: nowrap;
+    }
+
+    /* ── Kira card (top) ── */
+    .kira-card {
+      background: linear-gradient(135deg, rgba(74, 53, 88, 0.85), rgba(45, 31, 53, 0.9));
+      border: 1px solid rgba(201, 184, 232, 0.25);
+      border-radius: 24px;
+      padding: 22px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      cursor: pointer;
+      animation: fadeUp 0.5s ease both;
+      transition: transform 0.15s;
+      backdrop-filter: blur(20px);
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+
+    .kira-card::after {
+      content: '';
+      position: absolute;
+      top: -30px;
+      right: -30px;
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(201, 184, 232, 0.2), transparent 70%);
+      pointer-events: none;
+    }
+
+    .kira-card:active {
+      transform: scale(0.97);
+    }
+
+    .kira-avatar {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--lavender), var(--rose));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+      box-shadow: 0 0 20px rgba(201, 184, 232, 0.3);
+    }
+
+    .kira-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .kira-label {
+      font-size: 10px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--lavender);
+      opacity: 0.75;
+      margin-bottom: 4px;
+    }
+
+    .kira-prompt {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 20px;
+      font-weight: 300;
+      font-style: italic;
+      color: white;
+      line-height: 1.3;
+    }
+
+    .kira-status {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.3);
+      margin-top: 4px;
+    }
+
+    .online-dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #a8e6a3;
+      margin-right: 5px;
+      vertical-align: middle;
+      animation: blink 2s infinite;
+    }
+
+    /* ── Phase card ── */
+    .phase-card {
+      background: linear-gradient(135deg, rgba(201, 184, 232, 0.18), rgba(232, 165, 176, 0.12));
+      border: 1px solid rgba(201, 184, 232, 0.2);
+      border-radius: 24px;
+      padding: 26px 24px;
+      margin-bottom: 14px;
+      backdrop-filter: blur(20px);
+      position: relative;
+      overflow: hidden;
+      animation: fadeUp 0.5s 0.08s ease both;
+    }
+
+    .phase-card::after {
+      content: '';
+      position: absolute;
+      top: -50px;
+      right: -50px;
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(201, 184, 232, 0.2), transparent 70%);
+      pointer-events: none;
+    }
+
+    .section-label {
+      font-size: 10px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--lavender);
+      opacity: 0.7;
+      margin-bottom: 8px;
+    }
+
+    .phase-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 38px;
+      font-weight: 300;
+      font-style: italic;
+      color: white;
+      line-height: 1.1;
+      margin-bottom: 4px;
+    }
+
+    .phase-meta {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.45);
+      margin-bottom: 20px;
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin-bottom: 16px;
+    }
+
+    .tendencies-label {
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.35);
+      margin-bottom: 10px;
+    }
+
+    .pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .pill {
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 5px 13px;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .pill.warm {
+      background: rgba(232, 165, 176, 0.15);
+      border-color: rgba(232, 165, 176, 0.25);
+      color: var(--blush);
+    }
+
+    .pill.cool {
+      background: rgba(201, 184, 232, 0.15);
+      border-color: rgba(201, 184, 232, 0.25);
+      color: var(--lavender);
+    }
+
+    /* ── Check-in card ── */
+    .checkin-card {
+      background: linear-gradient(135deg, rgba(232, 165, 176, 0.2), rgba(176, 154, 181, 0.15));
+      border: 1px solid rgba(232, 165, 176, 0.2);
+      border-radius: 24px;
+      padding: 22px 24px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      animation: fadeUp 0.5s 0.16s ease both;
+      transition: transform 0.15s, opacity 0.15s;
+      backdrop-filter: blur(20px);
+    }
+
+    .checkin-card:active {
+      transform: scale(0.97);
+      opacity: 0.85;
+    }
+
+    .checkin-label {
+      font-size: 10px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--rose);
+      opacity: 0.8;
+      margin-bottom: 5px;
+    }
+
+    .checkin-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 26px;
+      font-weight: 300;
+      font-style: italic;
+      color: white;
+      line-height: 1.2;
+    }
+
+    .checkin-sub {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.38);
+      margin-top: 4px;
+    }
+
+    .arrow-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: rgba(232, 165, 176, 0.18);
+      border: 1px solid rgba(232, 165, 176, 0.28);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+      flex-shrink: 0;
+      margin-left: 12px;
+    }
+
+    /* ── Sleep + Diet grid ── */
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+      animation: fadeUp 0.5s 0.24s ease both;
+    }
+
+    .grid-card {
+      border-radius: 20px;
+      padding: 20px 18px;
+      cursor: pointer;
+      transition: transform 0.15s, opacity 0.15s;
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+    }
+
+    .grid-card:active {
+      transform: scale(0.95);
+      opacity: 0.8;
+    }
+
+    .grid-card.sleep {
+      background: linear-gradient(135deg, rgba(108, 99, 180, 0.22), rgba(201, 184, 232, 0.12));
+      border-color: rgba(201, 184, 232, 0.18);
+    }
+
+    .grid-card.diet {
+      background: linear-gradient(135deg, rgba(232, 165, 176, 0.18), rgba(245, 200, 175, 0.12));
+      border-color: rgba(232, 165, 176, 0.18);
+    }
+
+    .grid-icon {
+      font-size: 26px;
+      margin-bottom: 10px;
+      display: block;
+    }
+
+    .grid-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: white;
+      margin-bottom: 3px;
+    }
+
+    .grid-sub {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.38);
+      line-height: 1.4;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+      padding: 6px 18px;
+      border-radius: 14px;
+      transition: opacity 0.15s;
+    }
+
+    .nav-item:active {
+      opacity: 0.5;
+    }
+
+    .nav-icon {
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .nav-label {
+      font-size: 9px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.3);
+    }
+
+    .nav-item.active .nav-label {
+      color: var(--blush);
+    }
+
+    .nav-item.active .nav-icon {
+      filter: drop-shadow(0 0 5px rgba(232, 165, 176, 0.5));
+    }
+
+    /* ── Animations ── */
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(14px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes blink {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.3;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page-wrapper">
+
+    <div class="container">
+
+      <!-- Header -->
+      <div class="header">
+        <div>
+          <div class="greeting" id="greetingText">Good morning</div>
+          <div class="app-name">Kira</div>
+        </div>
+        <div class="date-badge" id="dateDisplay">—</div>
+      </div>
+
+      <!-- Kira Chat Card (top) -->
+      <div class="kira-card" onclick="navigate('chat')">
+        <div class="kira-avatar">✦</div>
+        <div class="kira-info">
+          <div class="kira-label">Your companion</div>
+          <div class="kira-prompt">Talk to Kira about how you're feeling</div>
+          <div class="kira-status">
+            <span class="online-dot"></span>Always here
+          </div>
+        </div>
+        <div style="font-size:18px;opacity:0.4;margin-left:4px;">→</div>
+      </div>
+
+      <!-- Phase Card -->
+      <div class="phase-card">
+        <div class="section-label">Current Phase</div>
+        <div class="phase-name" id="phaseName">Luteal</div>
+        <div class="phase-meta" id="phaseMeta">Day 24 · 4 days until next period</div>
+        <div class="divider"></div>
+        <div class="tendencies-label">Today you may feel</div>
+        <div class="pills" id="tendencyPills">
+          <span class="pill warm">Higher sensitivity</span>
+          <span class="pill warm">Craving intensity</span>
+          <span class="pill cool">Lower energy</span>
+          <span class="pill">Introspective</span>
+        </div>
+      </div>
+
+      <!-- Mood Check-in -->
+      <div class="checkin-card" onclick="navigate('checkin')">
+        <div>
+          <div class="checkin-label">Daily Check-in</div>
+          <div class="checkin-title">How are you feeling<br>right now?</div>
+          <div class="checkin-sub">Takes 30 seconds</div>
+        </div>
+        <div class="arrow-btn">→</div>
+      </div>
+
+      <!-- Sleep + Diet Grid -->
+      <div class="grid">
+        <div class="grid-card sleep" onclick="navigate('sleep')">
+          <span class="grid-icon">🌙</span>
+          <div class="grid-title">Sleep</div>
+          <div class="grid-sub">Log last night's rest</div>
+        </div>
+        <div class="grid-card diet" onclick="navigate('diet')">
+          <span class="grid-icon">🌿</span>
+          <div class="grid-title">Nutrition</div>
+          <div class="grid-sub">Track cravings & meals</div>
+        </div>
+        <div class="grid-card micro-interventions" onclick="navigate('micro')">
+          <span class="grid-icon">🌿</span>
+          <div class="grid-title">Nutrition</div>
+          <div class="grid-sub">Track cravings & meals</div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    // Greeting based on time
+    const hour = new Date().getHours();
+    const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+    document.getElementById('greetingText').textContent = greeting;
+
+    // Date display
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    document.getElementById('dateDisplay').textContent = dateStr;
+
+    // Phase tendencies
+    const phaseTendencies = {
+      menstrual: [
+        { text: 'Low energy', type: 'warm' },
+        { text: 'Introspective', type: 'cool' },
+        { text: 'Rest needed', type: '' },
+        { text: 'High sensitivity', type: 'warm' }
+      ],
+      follicular: [
+        { text: 'Rising energy', type: 'cool' },
+        { text: 'Creative clarity', type: 'cool' },
+        { text: 'Motivated', type: '' },
+        { text: 'Social openness', type: '' }
+      ],
+      ovulatory: [
+        { text: 'Peak confidence', type: 'cool' },
+        { text: 'High energy', type: 'cool' },
+        { text: 'Communicative', type: '' },
+        { text: 'Assertive', type: '' }
+      ],
+      luteal: [
+        { text: 'Higher sensitivity', type: 'warm' },
+        { text: 'Craving intensity', type: 'warm' },
+        { text: 'Lower energy', type: 'cool' },
+        { text: 'Introspective', type: '' }
+      ]
+    };
+
+    // Called from App Inventor to update phase data
+    function updatePhase(phase, cycleDay, nextPeriodDays) {
+      document.getElementById('phaseName').textContent =
+        phase.charAt(0).toUpperCase() + phase.slice(1);
+      document.getElementById('phaseMeta').textContent =
+        'Day ' + cycleDay + ' \u00b7 ' + nextPeriodDays + ' days until next period';
+
+      const pills = phaseTendencies[phase] || phaseTendencies.luteal;
+      document.getElementById('tendencyPills').innerHTML = pills.map(function (p) {
+        return '<span class="pill ' + p.type + '">' + p.text + '</span>';
+      }).join('');
+    }
+
+    // Navigation signals to App Inventor
+    let navigating = false;
+
+    function navigate(screen) {
+      if (navigating) return;
+      navigating = true;
+      window.AppInventor.setWebViewString('navigate:' + screen);
+    }  </script>
+</body>
+
+</html>

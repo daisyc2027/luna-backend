@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Kira Chat</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --rose: #e8a5b0;
+      --blush: #f2c4ce;
+      --lavender: #c9b8e8;
+      --deep: #2d1f35;
+      --mid: #4a3558;
+      --border: rgba(255,255,255,0.14);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    html {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      height: 100%;
+      background: var(--deep);
+      font-family: 'DM Sans', sans-serif;
+      color: white;
+      overflow: hidden;
+      position: fixed;
+      width: 100%;
+      top: 0;
+      left: 0;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -30%;
+      left: -20%;
+      width: 70%;
+      height: 70%;
+      background: radial-gradient(circle, rgba(201,184,232,0.22) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      bottom: -20%;
+      right: -20%;
+      width: 60%;
+      height: 60%;
+      background: radial-gradient(circle, rgba(232,165,176,0.18) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Loading screen */
+    .loading-screen {
+      position: fixed;
+      inset: 0;
+      background: var(--deep);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      transition: opacity 0.4s ease;
+    }
+
+    .loading-avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--lavender), var(--rose));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      margin-bottom: 16px;
+      box-shadow: 0 8px 28px rgba(201,184,232,0.3);
+      animation: pulse 1.5s infinite;
+    }
+
+    .loading-text {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 20px;
+      font-style: italic;
+      font-weight: 300;
+      color: rgba(255,255,255,0.6);
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 8px 28px rgba(201,184,232,0.3); }
+      50% { box-shadow: 0 8px 40px rgba(201,184,232,0.6); }
+    }
+
+    .page-wrapper {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 1;
+    }
+
+    /* Header */
+    .header {
+      flex-shrink: 0;
+      background: rgba(45,31,53,0.92);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 20px 14px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .back-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 16px;
+      color: var(--lavender);
+      flex-shrink: 0;
+      transition: opacity 0.15s;
+    }
+
+    .back-btn:active { opacity: 0.6; }
+
+    .kira-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--lavender), var(--rose));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+      box-shadow: 0 4px 16px rgba(201,184,232,0.35);
+    }
+
+    .kira-info { flex: 1; }
+
+    .kira-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 20px;
+      font-weight: 400;
+      font-style: italic;
+      color: white;
+      line-height: 1;
+      margin-bottom: 3px;
+    }
+
+    .kira-status {
+      font-size: 11px;
+      color: rgba(255,255,255,0.4);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .online-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #6fcf97;
+      animation: blink 2s infinite;
+    }
+
+    /* Chat area */
+    .chat-area {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    /* Welcome */
+    .welcome {
+      text-align: center;
+      padding: 30px 0 20px;
+      animation: fadeUp 0.5s ease both;
+    }
+
+    .welcome-avatar {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--lavender), var(--rose));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      margin: 0 auto 14px;
+      box-shadow: 0 8px 28px rgba(201,184,232,0.3);
+    }
+
+    .welcome-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 24px;
+      font-weight: 300;
+      font-style: italic;
+      color: white;
+      margin-bottom: 8px;
+    }
+
+    .welcome-sub {
+      font-size: 13px;
+      color: rgba(255,255,255,0.4);
+      line-height: 1.6;
+      max-width: 220px;
+      margin: 0 auto;
+    }
+
+    /* Clear chat button */
+    .clear-btn {
+      display: none;
+      margin: 0 auto 16px;
+      padding: 8px 20px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.35);
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: opacity 0.15s;
+    }
+
+    .clear-btn:active { opacity: 0.6; }
+
+    /* Bubbles */
+    .bubble-row {
+      display: flex;
+      margin-bottom: 8px;
+      animation: fadeUp 0.3s ease both;
+    }
+
+    .bubble-row.user { justify-content: flex-end; }
+    .bubble-row.kira { justify-content: flex-start; align-items: flex-end; }
+
+    .bubble-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--lavender), var(--rose));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      flex-shrink: 0;
+      margin-right: 8px;
+      box-shadow: 0 2px 8px rgba(201,184,232,0.25);
+    }
+
+    .bubble-content {
+      display: flex;
+      flex-direction: column;
+      max-width: 75%;
+    }
+
+    .bubble {
+      padding: 12px 16px;
+      font-size: 15px;
+      line-height: 1.55;
+      word-wrap: break-word;
+    }
+
+    .bubble-row.user .bubble {
+      background: linear-gradient(135deg, #7c3aed, #a855f7);
+      color: white;
+      border-radius: 20px 20px 4px 20px;
+      box-shadow: 0 4px 16px rgba(124,58,237,0.3);
+    }
+
+    .bubble-row.kira .bubble {
+      background: rgba(255,255,255,0.1);
+      color: white;
+      border-radius: 20px 20px 20px 4px;
+      border: 1px solid rgba(255,255,255,0.12);
+      backdrop-filter: blur(10px);
+    }
+
+    .bubble-time {
+      font-size: 10px;
+      color: rgba(255,255,255,0.3);
+      margin-top: 4px;
+      padding: 0 4px;
+    }
+
+    .bubble-row.user .bubble-time { text-align: right; }
+
+    /* Typing indicator */
+    .typing-row {
+      display: none;
+      align-items: flex-end;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .typing-bubble {
+      background: rgba(255,255,255,0.1);
+      border-radius: 20px 20px 20px 4px;
+      padding: 14px 18px;
+      border: 1px solid rgba(255,255,255,0.12);
+      backdrop-filter: blur(10px);
+      display: flex;
+      gap: 5px;
+      align-items: center;
+    }
+
+    .typing-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--lavender);
+      animation: typingBounce 1.2s infinite;
+    }
+
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+    /* Intervention button */
+    .intervention-btn {
+      flex-shrink: 0;
+      margin: 0 16px 8px 52px;
+      padding: 10px 18px;
+      background: linear-gradient(135deg, rgba(201,184,232,0.2), rgba(232,165,176,0.15));
+      border: 1px solid rgba(201,184,232,0.3);
+      border-radius: 20px;
+      font-size: 13px;
+      color: var(--lavender);
+      cursor: pointer;
+      display: none;
+      width: fit-content;
+      transition: opacity 0.15s;
+      font-family: 'DM Sans', sans-serif;
+      backdrop-filter: blur(10px);
+    }
+
+    .intervention-btn:active { opacity: 0.7; }
+
+    /* Input area */
+    .input-area {
+      flex-shrink: 0;
+      background: rgba(30,18,40,0.95);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-top: 1px solid var(--border);
+      padding: 12px 16px 32px;
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+    }
+
+    .input-box {
+      flex: 1;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 22px;
+      padding: 11px 16px;
+      font-size: 15px;
+      font-family: 'DM Sans', sans-serif;
+      color: white;
+      outline: none;
+      resize: none;
+      max-height: 120px;
+      min-height: 44px;
+      line-height: 1.4;
+    }
+
+    .input-box::placeholder { color: rgba(255,255,255,0.3); }
+    .input-box:focus { border-color: rgba(201,184,232,0.4); }
+
+    .send-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--lavender), var(--rose));
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      box-shadow: 0 4px 14px rgba(201,184,232,0.35);
+      transition: transform 0.15s, opacity 0.15s;
+      font-size: 18px;
+      color: white;
+    }
+
+    .send-btn:active { transform: scale(0.92); }
+    .send-btn:disabled { opacity: 0.35; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    @keyframes typingBounce {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-5px); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Loading screen -->
+  <div class="loading-screen" id="loadingScreen">
+    <div class="loading-avatar">✦</div>
+    <div class="loading-text">Loading Kira...</div>
+  </div>
+
+  <div class="page-wrapper">
+
+    <div class="header">
+      <div class="back-btn" onclick="goBack()">←</div>
+      <div class="kira-avatar">✦</div>
+      <div class="kira-info">
+        <div class="kira-name">Kira</div>
+        <div class="kira-status">
+          <div class="online-dot"></div>
+          Always here for you
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-area" id="chatArea">
+
+      <div class="welcome" id="welcomeMsg">
+        <div class="welcome-avatar">✦</div>
+        <div class="welcome-title">Hey, I'm Kira</div>
+        <div class="welcome-sub">I'm here to listen. Tell me how you're feeling today.</div>
+      </div>
+
+      <button class="clear-btn" id="clearBtn" onclick="confirmClear()">
+        Clear conversation
+      </button>
+
+      <div class="typing-row" id="typingIndicator">
+        <div class="bubble-avatar">✦</div>
+        <div class="typing-bubble">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <button class="intervention-btn" id="interventionBtn" onclick="openIntervention()">
+      🌬️ Try a breathing exercise
+    </button>
+
+    <div class="input-area">
+      <textarea
+        class="input-box"
+        id="messageInput"
+        placeholder="Message Kira..."
+        rows="1"
+        oninput="autoResize(this)"
+        onkeydown="handleKey(event)"
+      ></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()">↑</button>
+    </div>
+
+  </div>
+
+  <script>
+    const BACKEND_URL = 'https://sunniest-monroe-reciprocative.ngrok-free.dev';
+    const CYCLE_PHASE = 'luteal';
+    const CYCLE_DAY = 24;
+    const STORAGE_KEY = 'kira_chat_history';
+
+    let isWaiting = false;
+    let lastScrollTop = 0;
+
+    // ── Loading screen ──
+    function hideLoading() {
+      const screen = document.getElementById('loadingScreen');
+      screen.style.opacity = '0';
+      setTimeout(function() {
+        screen.style.display = 'none';
+      }, 400);
+    }
+
+    // Hide loading once fonts and layout are ready
+    if (document.fonts) {
+      document.fonts.ready.then(function() {
+        setTimeout(hideLoading, 300);
+      });
+    } else {
+      window.addEventListener('load', function() {
+        setTimeout(hideLoading, 300);
+      });
+    }
+
+    // ── Chat history persistence ──
+    function saveHistory() {
+      const chatArea = document.getElementById('chatArea');
+      const bubbles = chatArea.querySelectorAll('.bubble-row');
+      const history = [];
+
+      bubbles.forEach(function(row) {
+        const sender = row.classList.contains('user') ? 'user' : 'kira';
+        const text = row.querySelector('.bubble').textContent;
+        const time = row.querySelector('.bubble-time').textContent;
+        history.push({ sender: sender, text: text, time: time });
+      });
+
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+      } catch(e) {}
+    }
+
+    function loadHistory() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) return;
+
+        const history = JSON.parse(saved);
+        if (!history || history.length === 0) return;
+
+        // Hide welcome message
+        document.getElementById('welcomeMsg').style.display = 'none';
+        document.getElementById('clearBtn').style.display = 'block';
+
+        // Restore bubbles
+        history.forEach(function(item) {
+          addBubble(item.sender, item.text, item.time, false);
+        });
+
+        scrollToBottom();
+      } catch(e) {}
+    }
+
+    function confirmClear() {
+      const confirmed = confirm('Clear your conversation with Kira?');
+      if (confirmed) {
+        clearHistory();
+      }
+    }
+
+    function clearHistory() {
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch(e) {}
+
+      // Remove all bubble rows
+      const chatArea = document.getElementById('chatArea');
+      const bubbles = chatArea.querySelectorAll('.bubble-row');
+      bubbles.forEach(function(b) { b.remove(); });
+
+      // Show welcome again
+      document.getElementById('welcomeMsg').style.display = 'block';
+      document.getElementById('clearBtn').style.display = 'none';
+      document.getElementById('interventionBtn').style.display = 'none';
+    }
+
+    // ── Keyboard fix ──
+    const inputBox = document.getElementById('messageInput');
+
+    inputBox.addEventListener('focus', function() {
+      lastScrollTop = document.getElementById('chatArea').scrollTop;
+      setTimeout(function() {
+        document.getElementById('chatArea').scrollTop = lastScrollTop;
+        window.scrollTo(0, 0);
+        document.body.scrollTop = 0;
+        document.documentElement.scrollTop = 0;
+      }, 300);
+      setTimeout(function() {
+        scrollToBottom();
+      }, 500);
+    });
+
+    inputBox.addEventListener('blur', function() {
+      setTimeout(function() {
+        window.scrollTo(0, 0);
+        document.body.scrollTop = 0;
+        document.documentElement.scrollTop = 0;
+      }, 100);
+    });
+
+    // ── Auto resize textarea ──
+    function autoResize(el) {
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+    }
+
+    function handleKey(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    }
+
+    function getTime() {
+      return new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    }
+
+    // ── Add bubble ──
+    function addBubble(sender, text, time, save) {
+      if (save === undefined) save = true;
+
+      document.getElementById('welcomeMsg').style.display = 'none';
+      document.getElementById('clearBtn').style.display = 'block';
+
+      const chatArea = document.getElementById('chatArea');
+      const typingIndicator = document.getElementById('typingIndicator');
+
+      const row = document.createElement('div');
+      row.className = 'bubble-row ' + sender;
+
+      const bubbleDiv = document.createElement('div');
+      bubbleDiv.className = 'bubble';
+      bubbleDiv.textContent = text;
+
+      const timeDiv = document.createElement('div');
+      timeDiv.className = 'bubble-time';
+      timeDiv.textContent = time || getTime();
+
+      const contentDiv = document.createElement('div');
+      contentDiv.className = 'bubble-content';
+      contentDiv.appendChild(bubbleDiv);
+      contentDiv.appendChild(timeDiv);
+
+      if (sender === 'kira') {
+        const avatarDiv = document.createElement('div');
+        avatarDiv.className = 'bubble-avatar';
+        avatarDiv.textContent = '✦';
+        row.appendChild(avatarDiv);
+      }
+
+      row.appendChild(contentDiv);
+      chatArea.insertBefore(row, typingIndicator);
+
+      if (save) {
+        saveHistory();
+        scrollToBottom();
+      }
+    }
+
+    // ── Typing indicator ──
+    function showTyping() {
+      document.getElementById('typingIndicator').style.display = 'flex';
+      scrollToBottom();
+    }
+
+    function hideTyping() {
+      document.getElementById('typingIndicator').style.display = 'none';
+    }
+
+    // ── Scroll ──
+    function scrollToBottom() {
+      const chatArea = document.getElementById('chatArea');
+      setTimeout(function() {
+        chatArea.scrollTop = chatArea.scrollHeight;
+      }, 50);
+    }
+
+    // ── Send message ──
+    async function sendMessage() {
+      const input = document.getElementById('messageInput');
+      const text = input.value.trim();
+      if (!text || isWaiting) return;
+
+      isWaiting = true;
+      document.getElementById('sendBtn').disabled = true;
+      document.getElementById('interventionBtn').style.display = 'none';
+
+      addBubble('user', text);
+      input.value = '';
+      input.style.height = 'auto';
+      showTyping();
+
+      try {
+        const response = await fetch(BACKEND_URL + '/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: text,
+            phase: CYCLE_PHASE,
+            cycle_day: CYCLE_DAY
+          })
+        });
+
+        const data = await response.json();
+        hideTyping();
+        addBubble('kira', data.message);
+
+        if (data.intervention_trigger && data.intervention_trigger !== 'null') {
+          const btn = document.getElementById('interventionBtn');
+          btn.style.display = 'block';
+          if (data.intervention_trigger === 'BREATHING') {
+            btn.textContent = '🌬️ Try a breathing exercise';
+          } else if (data.intervention_trigger === 'URGE_SURF') {
+            btn.textContent = '🌊 Try urge surfing';
+          } else if (data.intervention_trigger === 'HAPTIC') {
+            btn.textContent = '📳 Try a calming reset';
+          }
+          scrollToBottom();
+        }
+
+      } catch (err) {
+        hideTyping();
+        addBubble('kira', "Sorry, I'm having a little trouble connecting right now. Try again in a moment.");
+      }
+
+      isWaiting = false;
+      document.getElementById('sendBtn').disabled = false;
+    }
+
+    // ── Navigation ──
+    function goBack() {
+      window.AppInventor.setWebViewString('navigate:home');
+    }
+
+    function openIntervention() {
+      window.AppInventor.setWebViewString('navigate:breathing');
+    }
+
+    // ── Init ──
+    loadHistory();
+  </script>
+</body>
+</html>

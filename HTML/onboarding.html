@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Welcome to Kira</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --rose: #e8a5b0;
+      --blush: #f2c4ce;
+      --lavender: #c9b8e8;
+      --deep: #2d1f35;
+      --mid: #4a3558;
+      --border: rgba(255,255,255,0.14);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    html {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      height: 100%;
+      background: var(--deep);
+      font-family: 'DM Sans', sans-serif;
+      color: white;
+      overflow: hidden;
+      position: fixed;
+      width: 100%;
+      top: 0;
+      left: 0;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -30%;
+      left: -20%;
+      width: 70%;
+      height: 70%;
+      background: radial-gradient(circle, rgba(201,184,232,0.22) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      bottom: -20%;
+      right: -20%;
+      width: 60%;
+      height: 60%;
+      background: radial-gradient(circle, rgba(232,165,176,0.18) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Page wrapper ── */
+    .page-wrapper {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      z-index: 1;
+    }
+
+    /* ── Progress bar ── */
+    .progress-bar {
+      flex-shrink: 0;
+      padding: 56px 28px 0;
+      display: flex;
+      gap: 6px;
+    }
+
+    .progress-step {
+      flex: 1;
+      height: 3px;
+      border-radius: 2px;
+      background: rgba(255,255,255,0.12);
+      transition: background 0.4s ease;
+    }
+
+    .progress-step.active { background: var(--lavender); }
+    .progress-step.done { background: rgba(201,184,232,0.4); }
+
+    /* ── Steps container ── */
+    .steps-container {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .step {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      display: flex;
+      flex-direction: column;
+      padding: 48px 28px 0;
+      opacity: 0;
+      transform: translateX(40px);
+      transition: opacity 0.35s ease, transform 0.35s ease;
+      pointer-events: none;
+    }
+
+    .step.active {
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: all;
+    }
+
+    .step.exiting {
+      opacity: 0;
+      transform: translateX(-40px);
+    }
+
+    /* Step content */
+    .step-label {
+      font-size: 11px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--lavender);
+      opacity: 0.7;
+      margin-bottom: 12px;
+    }
+
+    .step-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 36px;
+      font-weight: 300;
+      font-style: italic;
+      color: white;
+      line-height: 1.15;
+      margin-bottom: 10px;
+    }
+
+    .step-sub {
+      font-size: 13px;
+      color: rgba(255,255,255,0.4);
+      line-height: 1.6;
+      margin-bottom: 36px;
+    }
+
+    /* Input fields */
+    .field-input {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 16px;
+      padding: 16px 20px;
+      font-size: 18px;
+      font-family: 'DM Sans', sans-serif;
+      color: white;
+      outline: none;
+      width: 100%;
+      transition: border-color 0.2s;
+    }
+
+    .field-input::placeholder { color: rgba(255,255,255,0.25); }
+    .field-input:focus { border-color: rgba(201,184,232,0.5); }
+
+    /* Date input special styling */
+    input[type="date"] {
+      color-scheme: dark;
+    }
+
+    /* Number stepper */
+    .stepper {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 16px;
+      padding: 12px 20px;
+      width: fit-content;
+    }
+
+    .stepper-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: white;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.15s;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    .stepper-btn:active { opacity: 0.6; }
+
+    .stepper-value {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 42px;
+      font-weight: 300;
+      color: white;
+      min-width: 60px;
+      text-align: center;
+    }
+
+    .stepper-unit {
+      font-size: 13px;
+      color: rgba(255,255,255,0.4);
+    }
+
+    /* Mood chips */
+    .mood-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .mood-chip {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 16px;
+      padding: 16px 18px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .mood-chip:active { transform: scale(0.97); }
+
+    .mood-chip.selected {
+      background: rgba(201,184,232,0.2);
+      border-color: rgba(201,184,232,0.45);
+    }
+
+    .mood-emoji { font-size: 22px; }
+
+    .mood-label {
+      font-size: 14px;
+      color: rgba(255,255,255,0.8);
+      font-weight: 400;
+    }
+
+    /* Welcome step special */
+    .kira-hero {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--lavender), var(--rose));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      margin-bottom: 28px;
+      box-shadow: 0 8px 32px rgba(201,184,232,0.3);
+      animation: heroFloat 3s ease-in-out infinite;
+    }
+
+    @keyframes heroFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    /* Done step */
+    .done-animation {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      text-align: center;
+      padding-bottom: 60px;
+    }
+
+    .done-circle {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--lavender), var(--rose));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      margin-bottom: 24px;
+      box-shadow: 0 8px 32px rgba(201,184,232,0.35);
+      animation: doneScale 0.5s ease both;
+    }
+
+    @keyframes doneScale {
+      from { transform: scale(0.5); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .done-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 32px;
+      font-weight: 300;
+      font-style: italic;
+      color: white;
+      margin-bottom: 10px;
+    }
+
+    .done-sub {
+      font-size: 14px;
+      color: rgba(255,255,255,0.45);
+      line-height: 1.6;
+      max-width: 260px;
+    }
+
+    .personalising-text {
+      margin-top: 32px;
+      font-size: 13px;
+      color: var(--lavender);
+      opacity: 0.7;
+      letter-spacing: 1px;
+    }
+
+    /* ── Bottom area ── */
+    .bottom-area {
+      flex-shrink: 0;
+      padding: 20px 28px 44px;
+    }
+
+    .next-btn {
+      width: 100%;
+      padding: 17px;
+      background: linear-gradient(135deg, var(--lavender), var(--rose));
+      border: none;
+      border-radius: 18px;
+      font-size: 16px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 500;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(201,184,232,0.3);
+      transition: transform 0.15s, opacity 0.15s;
+      letter-spacing: 0.5px;
+    }
+
+    .next-btn:active { transform: scale(0.98); opacity: 0.9; }
+    .next-btn:disabled { opacity: 0.35; }
+
+    .skip-btn {
+      display: block;
+      text-align: center;
+      margin-top: 14px;
+      font-size: 13px;
+      color: rgba(255,255,255,0.3);
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-wrapper">
+
+    <!-- Progress bar -->
+    <div class="progress-bar" id="progressBar">
+      <div class="progress-step active" id="ps1"></div>
+      <div class="progress-step" id="ps2"></div>
+      <div class="progress-step" id="ps3"></div>
+      <div class="progress-step" id="ps4"></div>
+      <div class="progress-step" id="ps5"></div>
+    </div>
+
+    <!-- Steps -->
+    <div class="steps-container">
+
+      <!-- Step 1: Welcome -->
+      <div class="step active" id="step1">
+        <div class="kira-hero">✦</div>
+        <div class="step-label">Welcome</div>
+        <div class="step-title">Meet Kira,<br>your wellness<br>companion</div>
+        <div class="step-sub">Kira learns your cycle and helps you navigate your emotions, energy, and wellbeing — personally.</div>
+      </div>
+
+      <!-- Step 2: Name -->
+      <div class="step" id="step2">
+        <div class="step-label">Let's get personal</div>
+        <div class="step-title">What's your<br>name?</div>
+        <div class="step-sub">Kira will use this to personalise everything for you.</div>
+        <input
+          class="field-input"
+          type="text"
+          id="nameInput"
+          placeholder="Your first name"
+          autocomplete="off"
+          autocorrect="off"
+        >
+      </div>
+
+      <!-- Step 3: Age -->
+      <div class="step" id="step3">
+        <div class="step-label">About you</div>
+        <div class="step-title" id="ageTitle">How old are<br>you?</div>
+        <div class="step-sub">This helps Kira understand your hormonal profile better.</div>
+        <div class="stepper">
+          <button class="stepper-btn" onclick="adjustAge(-1)">−</button>
+          <div class="stepper-value" id="ageValue">25</div>
+          <button class="stepper-btn" onclick="adjustAge(1)">+</button>
+          <div class="stepper-unit">years</div>
+        </div>
+      </div>
+
+      <!-- Step 4: Last period date -->
+      <div class="step" id="step4">
+        <div class="step-label">Your cycle</div>
+        <div class="step-title">When did your<br>last period<br>start?</div>
+        <div class="step-sub">Kira uses this to track your cycle phase in real time.</div>
+        <input
+          class="field-input"
+          type="date"
+          id="periodInput"
+        >
+      </div>
+
+      <!-- Step 5: Cycle length -->
+      <div class="step" id="step5">
+        <div class="step-label">Your cycle</div>
+        <div class="step-title">How long is<br>your average<br>cycle?</div>
+        <div class="step-sub">Most cycles are 21–35 days. Don't worry if you're not sure — Kira will learn over time.</div>
+        <div class="stepper">
+          <button class="stepper-btn" onclick="adjustCycle(-1)">−</button>
+          <div class="stepper-value" id="cycleValue">28</div>
+          <button class="stepper-btn" onclick="adjustCycle(1)">+</button>
+          <div class="stepper-unit">days</div>
+        </div>
+      </div>
+
+      <!-- Step 6: Mood -->
+      <div class="step" id="step6">
+        <div class="step-label" id="moodLabel">Almost there</div>
+        <div class="step-title" id="moodTitle">How are you<br>feeling today?</div>
+        <div class="step-sub">Select everything that applies.</div>
+        <div class="mood-grid">
+          <div class="mood-chip" onclick="toggleMood(this, 'anxious')">
+            <span class="mood-emoji">😰</span>
+            <span class="mood-label">Anxious</span>
+          </div>
+          <div class="mood-chip" onclick="toggleMood(this, 'tired')">
+            <span class="mood-emoji">😴</span>
+            <span class="mood-label">Tired</span>
+          </div>
+          <div class="mood-chip" onclick="toggleMood(this, 'irritable')">
+            <span class="mood-emoji">😤</span>
+            <span class="mood-label">Irritable</span>
+          </div>
+          <div class="mood-chip" onclick="toggleMood(this, 'sad')">
+            <span class="mood-emoji">😔</span>
+            <span class="mood-label">Low mood</span>
+          </div>
+          <div class="mood-chip" onclick="toggleMood(this, 'motivated')">
+            <span class="mood-emoji">✨</span>
+            <span class="mood-label">Motivated</span>
+          </div>
+          <div class="mood-chip" onclick="toggleMood(this, 'calm')">
+            <span class="mood-emoji">🌿</span>
+            <span class="mood-label">Calm</span>
+          </div>
+          <div class="mood-chip" onclick="toggleMood(this, 'overwhelmed')">
+            <span class="mood-emoji">🌊</span>
+            <span class="mood-label">Overwhelmed</span>
+          </div>
+          <div class="mood-chip" onclick="toggleMood(this, 'happy')">
+            <span class="mood-emoji">🌸</span>
+            <span class="mood-label">Happy</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 7: Done -->
+      <div class="step" id="step7">
+        <div class="done-animation">
+          <div class="done-circle">✦</div>
+          <div class="done-title" id="doneTitle">You're all set</div>
+          <div class="done-sub" id="doneSub">Kira is personalising your experience right now.</div>
+          <div class="personalising-text" id="personalisingText">Setting up your profile...</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom -->
+    <div class="bottom-area" id="bottomArea">
+      <button class="next-btn" id="nextBtn" onclick="nextStep()">Get started</button>
+    </div>
+
+  </div>
+
+  <script>
+    const BACKEND_URL = 'https://sunniest-monroe-reciprocative.ngrok-free.dev';
+
+    let currentStep = 1;
+    const totalSteps = 6;
+
+    let userData = {
+      name: '',
+      age: 25,
+      last_period_date: '',
+      cycle_length: 28,
+      current_moods: []
+    };
+
+    // ── Set today as default for period date ──
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    document.getElementById('periodInput').value = yyyy + '-' + mm + '-' + dd;
+    document.getElementById('periodInput').max = yyyy + '-' + mm + '-' + dd;
+
+    // ── Progress bar ──
+    function updateProgress() {
+      for (let i = 1; i <= totalSteps; i++) {
+        const el = document.getElementById('ps' + i);
+        if (!el) continue;
+        if (i < currentStep) {
+          el.className = 'progress-step done';
+        } else if (i === currentStep) {
+          el.className = 'progress-step active';
+        } else {
+          el.className = 'progress-step';
+        }
+      }
+    }
+
+    // ── Step navigation ──
+    function nextStep() {
+      // Validate current step
+      if (currentStep === 2) {
+        const name = document.getElementById('nameInput').value.trim();
+        if (!name) {
+          document.getElementById('nameInput').focus();
+          document.getElementById('nameInput').style.borderColor = 'rgba(232,165,176,0.6)';
+          return;
+        }
+        userData.name = name;
+        // Personalise subsequent steps
+        document.getElementById('ageTitle').textContent = 'How old are\nyou, ' + name + '?';
+        document.getElementById('moodLabel').textContent = 'Almost there, ' + name;
+        document.getElementById('moodTitle').textContent = 'How are you\nfeeling today?';
+      }
+
+      if (currentStep === 3) {
+        userData.age = parseInt(document.getElementById('ageValue').textContent);
+      }
+
+      if (currentStep === 4) {
+        userData.last_period_date = document.getElementById('periodInput').value;
+        if (!userData.last_period_date) {
+          document.getElementById('periodInput').focus();
+          return;
+        }
+      }
+
+      if (currentStep === 5) {
+        userData.cycle_length = parseInt(document.getElementById('cycleValue').textContent);
+      }
+
+      if (currentStep === 6) {
+        // Last step — submit
+        submitOnboarding();
+        return;
+      }
+
+      // Animate transition
+      const current = document.getElementById('step' + currentStep);
+      current.classList.add('exiting');
+      current.classList.remove('active');
+
+      setTimeout(function() {
+        current.classList.remove('exiting');
+        currentStep++;
+        updateProgress();
+        updateNextBtn();
+
+        const next = document.getElementById('step' + currentStep);
+        next.classList.add('active');
+
+        // Show/hide progress bar and bottom on last step
+        if (currentStep === 7) {
+          document.getElementById('progressBar').style.opacity = '0';
+          document.getElementById('bottomArea').style.display = 'none';
+        }
+      }, 350);
+    }
+
+    function updateNextBtn() {
+      const btn = document.getElementById('nextBtn');
+      if (currentStep === 1) {
+        btn.textContent = 'Get started';
+      } else if (currentStep === 6) {
+        btn.textContent = 'Meet Kira →';
+      } else {
+        btn.textContent = 'Continue';
+      }
+    }
+
+    // ── Steppers ──
+    function adjustAge(delta) {
+      let val = parseInt(document.getElementById('ageValue').textContent) + delta;
+      val = Math.max(13, Math.min(60, val));
+      document.getElementById('ageValue').textContent = val;
+    }
+
+    function adjustCycle(delta) {
+      let val = parseInt(document.getElementById('cycleValue').textContent) + delta;
+      val = Math.max(21, Math.min(45, val));
+      document.getElementById('cycleValue').textContent = val;
+    }
+
+    // ── Mood selection ──
+    function toggleMood(el, mood) {
+      el.classList.toggle('selected');
+      if (el.classList.contains('selected')) {
+        if (!userData.current_moods.includes(mood)) {
+          userData.current_moods.push(mood);
+        }
+      } else {
+        userData.current_moods = userData.current_moods.filter(function(m) { return m !== mood; });
+      }
+    }
+
+    // ── Submit onboarding ──
+    async function submitOnboarding() {
+      // Animate to done step
+      const current = document.getElementById('step' + currentStep);
+      current.classList.add('exiting');
+      current.classList.remove('active');
+
+      setTimeout(function() {
+        current.classList.remove('exiting');
+        currentStep = 7;
+        document.getElementById('progressBar').style.opacity = '0';
+        document.getElementById('bottomArea').style.display = 'none';
+        document.getElementById('step7').classList.add('active');
+        document.getElementById('doneTitle').textContent = 'You\'re all set, ' + userData.name + ' ✦';
+        document.getElementById('doneSub').textContent = 'Kira is personalising your experience right now.';
+      }, 350);
+
+      // Send to backend
+      try {
+        document.getElementById('personalisingText').textContent = 'Saving your profile...';
+
+        await fetch(BACKEND_URL + '/save_onboarding', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(userData)
+        });
+
+        document.getElementById('personalisingText').textContent = 'Calculating your cycle phase...';
+        await new Promise(function(r) { setTimeout(r, 1000); });
+
+        document.getElementById('personalisingText').textContent = 'Preparing your home screen...';
+        await new Promise(function(r) { setTimeout(r, 1000); });
+
+        document.getElementById('personalisingText').textContent = 'Ready ✦';
+        await new Promise(function(r) { setTimeout(r, 600); });
+
+        // Navigate to home
+        window.AppInventor.setWebViewString('navigate:home');
+
+      } catch(err) {
+        document.getElementById('personalisingText').textContent = 'Almost ready...';
+        await new Promise(function(r) { setTimeout(r, 1500); });
+        window.AppInventor.setWebViewString('navigate:home');
+      }
+    }
+  </script>
+</body>
+</html>

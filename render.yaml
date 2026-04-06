@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: kira-backend
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: DEEPSEEK_API_KEY
+        sync: false
+      - key: GOOGLE_CREDENTIALS
+        sync: false
