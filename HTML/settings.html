@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Settings - Kira</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --rose: #e8a5b0;
+      --blush: #f2c4ce;
+      --lavender: #c9b8e8;
+      --deep: #2d1f35;
+      --mid: #4a3558;
+      --card: rgba(255,255,255,0.09);
+      --border: rgba(255,255,255,0.14);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    html {
+      height: 100%;
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: var(--deep);
+      font-family: 'DM Sans', sans-serif;
+      color: white;
+      touch-action: none;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -30%; left: -20%;
+      width: 70%; height: 70%;
+      background: radial-gradient(circle, rgba(201,184,232,0.22) 0%, transparent 70%);
+      pointer-events: none; z-index: 0;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      bottom: -20%; right: -20%;
+      width: 60%; height: 60%;
+      background: radial-gradient(circle, rgba(232,165,176,0.18) 0%, transparent 70%);
+      pointer-events: none; z-index: 0;
+    }
+
+    .page-wrapper {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100vh;
+      height: 100dvh;
+      position: relative;
+      z-index: 1;
+      overflow: hidden;
+    }
+
+    /* Header */
+    .header {
+      flex-shrink: 0;
+      background: rgba(45,31,53,0.92);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      touch-action: none;
+    }
+
+    .back-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 16px;
+      color: var(--lavender);
+      flex-shrink: 0;
+      transition: opacity 0.15s;
+      min-width: 44px;
+      min-height: 44px;
+    }
+
+    .back-btn:active { opacity: 0.6; }
+
+    .header-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px;
+      font-weight: 400;
+      font-style: italic;
+      color: white;
+      line-height: 1;
+    }
+
+    /* Scrollable content */
+    .scroll-container {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-y;
+      overscroll-behavior: contain;
+      padding: 20px 16px 40px;
+    }
+
+    /* Profile card */
+    .profile-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 28px;
+      animation: fadeUp 0.4s ease both;
+    }
+
+    .profile-avatar {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--lavender), var(--rose));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 24px;
+      font-weight: 400;
+      font-style: italic;
+      color: white;
+      flex-shrink: 0;
+      box-shadow: 0 4px 16px rgba(201,184,232,0.35);
+    }
+
+    .profile-info { flex: 1; }
+
+    .profile-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px;
+      font-weight: 400;
+      font-style: italic;
+      color: white;
+      line-height: 1.2;
+      margin-bottom: 4px;
+    }
+
+    .profile-username {
+      font-size: 13px;
+      color: rgba(255,255,255,0.4);
+    }
+
+    /* Section groups */
+    .section-group {
+      margin-bottom: 24px;
+      animation: fadeUp 0.4s ease both;
+    }
+
+    .section-group:nth-child(3) { animation-delay: 0.08s; }
+    .section-group:nth-child(4) { animation-delay: 0.16s; }
+    .section-group:nth-child(5) { animation-delay: 0.24s; }
+
+    .section-label {
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.35);
+      margin-bottom: 10px;
+      padding-left: 4px;
+    }
+
+    .section-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    /* Settings rows */
+    .settings-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      min-height: 52px;
+      cursor: pointer;
+      transition: background 0.15s;
+      position: relative;
+    }
+
+    .settings-row:active {
+      background: rgba(255,255,255,0.05);
+    }
+
+    .settings-row + .settings-row {
+      border-top: 1px solid rgba(255,255,255,0.07);
+    }
+
+    .row-label {
+      font-size: 15px;
+      color: rgba(255,255,255,0.85);
+      padding: 14px 0;
+      flex: 1;
+    }
+
+    .row-label.danger {
+      color: #e85d75;
+    }
+
+    .row-chevron {
+      font-size: 14px;
+      color: rgba(255,255,255,0.25);
+      flex-shrink: 0;
+      margin-left: 8px;
+    }
+
+    .row-info {
+      font-size: 13px;
+      color: rgba(255,255,255,0.3);
+      flex-shrink: 0;
+      margin-left: 8px;
+    }
+
+    /* Edit profile panel */
+    .edit-panel {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.35s ease, opacity 0.3s ease;
+      opacity: 0;
+      border-top: 1px solid rgba(255,255,255,0.07);
+    }
+
+    .edit-panel.open {
+      max-height: 300px;
+      opacity: 1;
+    }
+
+    .edit-panel-inner {
+      padding: 16px 20px 20px;
+    }
+
+    .field-group {
+      margin-bottom: 14px;
+    }
+
+    .field-label {
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+      margin-bottom: 8px;
+    }
+
+    .field-input {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 14px;
+      padding: 14px 16px;
+      font-size: 15px;
+      font-family: 'DM Sans', sans-serif;
+      color: white;
+      outline: none;
+      width: 100%;
+      transition: border-color 0.2s;
+      min-height: 44px;
+    }
+
+    .field-input::placeholder { color: rgba(255,255,255,0.25); }
+    .field-input:focus { border-color: rgba(201,184,232,0.5); }
+
+    .save-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--lavender), var(--rose));
+      border: none;
+      border-radius: 14px;
+      font-size: 15px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 500;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(201,184,232,0.3);
+      transition: transform 0.15s, opacity 0.15s;
+      min-height: 44px;
+      margin-top: 4px;
+    }
+
+    .save-btn:active { transform: scale(0.98); opacity: 0.9; }
+    .save-btn:disabled { opacity: 0.35; }
+
+    .save-status {
+      text-align: center;
+      font-size: 13px;
+      color: var(--lavender);
+      margin-top: 10px;
+      min-height: 20px;
+      transition: opacity 0.3s;
+    }
+
+    /* Color swatches */
+    .theme-row {
+      display: flex;
+      align-items: center;
+      padding: 14px 20px;
+      min-height: 52px;
+    }
+
+    .theme-row .row-label {
+      padding: 0;
+    }
+
+    .swatches {
+      display: flex;
+      gap: 12px;
+      margin-left: auto;
+    }
+
+    .swatch {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.15);
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.2s, border-color 0.2s;
+      min-width: 44px;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .swatch-inner {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+    }
+
+    .swatch:active { transform: scale(0.92); }
+
+    .swatch.active {
+      border-color: var(--lavender);
+      box-shadow: 0 0 12px rgba(201,184,232,0.4);
+    }
+
+    .swatch-check {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      font-size: 14px;
+      color: white;
+      transition: transform 0.25s ease;
+      pointer-events: none;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+    }
+
+    .swatch.active .swatch-check {
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    /* Dialog overlay */
+    .dialog-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+
+    .dialog-overlay.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .dialog-box {
+      background: #3a2a45;
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 20px;
+      padding: 28px 24px 22px;
+      width: 100%;
+      max-width: 320px;
+      text-align: center;
+      transform: scale(0.92);
+      transition: transform 0.25s ease;
+    }
+
+    .dialog-overlay.visible .dialog-box {
+      transform: scale(1);
+    }
+
+    .dialog-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px;
+      font-weight: 400;
+      font-style: italic;
+      color: white;
+      margin-bottom: 10px;
+    }
+
+    .dialog-message {
+      font-size: 14px;
+      color: rgba(255,255,255,0.6);
+      line-height: 1.6;
+      margin-bottom: 22px;
+    }
+
+    .dialog-buttons {
+      display: flex;
+      gap: 10px;
+    }
+
+    .dialog-btn {
+      flex: 1;
+      padding: 13px 16px;
+      border-radius: 14px;
+      font-size: 15px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 500;
+      cursor: pointer;
+      transition: transform 0.15s, opacity 0.15s;
+      min-height: 44px;
+      border: none;
+    }
+
+    .dialog-btn:active { transform: scale(0.97); }
+
+    .dialog-btn.stay {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.18);
+      color: rgba(255,255,255,0.8);
+    }
+
+    .dialog-btn.action {
+      background: linear-gradient(135deg, var(--lavender), var(--rose));
+      color: white;
+      box-shadow: 0 4px 14px rgba(201,184,232,0.3);
+    }
+
+    .dialog-btn.danger {
+      background: linear-gradient(135deg, #e85d75, #c94058);
+      color: white;
+      box-shadow: 0 4px 14px rgba(232,93,117,0.3);
+    }
+
+    /* Loading screen */
+    .loading-screen {
+      position: fixed;
+      inset: 0;
+      background: var(--deep);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      transition: opacity 0.4s ease;
+    }
+
+    .loading-avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--lavender), var(--rose));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      margin-bottom: 16px;
+      box-shadow: 0 8px 28px rgba(201,184,232,0.3);
+      animation: pulse 1.5s infinite;
+    }
+
+    .loading-text {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 20px;
+      font-style: italic;
+      font-weight: 300;
+      color: rgba(255,255,255,0.6);
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 8px 28px rgba(201,184,232,0.3); }
+      50% { box-shadow: 0 8px 40px rgba(201,184,232,0.6); }
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Loading screen -->
+  <div class="loading-screen" id="loadingScreen">
+    <div class="loading-avatar">&#10022;</div>
+    <div class="loading-text">Loading settings...</div>
+  </div>
+
+  <div class="page-wrapper">
+
+    <!-- Header -->
+    <div class="header">
+      <div class="back-btn" onclick="goBack()">&#8592;</div>
+      <div class="header-title">Settings</div>
+    </div>
+
+    <!-- Scrollable content -->
+    <div class="scroll-container" id="scrollContainer">
+
+      <!-- Profile card -->
+      <div class="profile-card">
+        <div class="profile-avatar" id="profileAvatar">?</div>
+        <div class="profile-info">
+          <div class="profile-name" id="profileName">Loading...</div>
+          <div class="profile-username" id="profileUsername">@---</div>
+        </div>
+      </div>
+
+      <!-- Account -->
+      <div class="section-group">
+        <div class="section-label">Account</div>
+        <div class="section-card">
+          <div class="settings-row" onclick="toggleEditProfile()">
+            <div class="row-label">Edit Profile</div>
+            <div class="row-chevron" id="editChevron">&#8250;</div>
+          </div>
+          <div class="edit-panel" id="editPanel">
+            <div class="edit-panel-inner">
+              <div class="field-group">
+                <div class="field-label">Name</div>
+                <input class="field-input" type="text" id="editName" placeholder="Your name">
+              </div>
+              <div class="field-group">
+                <div class="field-label">Age</div>
+                <input class="field-input" type="number" id="editAge" placeholder="Your age" min="1" max="120">
+              </div>
+              <button class="save-btn" id="saveBtn" onclick="saveProfile(event)">Save Changes</button>
+              <div class="save-status" id="saveStatus"></div>
+            </div>
+          </div>
+          <div class="settings-row" onclick="showLogoutDialog()">
+            <div class="row-label">Log Out</div>
+            <div class="row-chevron">&#8250;</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Appearance -->
+      <div class="section-group">
+        <div class="section-label">Appearance</div>
+        <div class="section-card">
+          <div class="theme-row">
+            <div class="row-label">Color Theme</div>
+            <div class="swatches">
+              <div class="swatch" data-theme="default" onclick="selectTheme('default')">
+                <div class="swatch-inner" style="background: #2d1f35;"></div>
+                <span class="swatch-check">&#10003;</span>
+              </div>
+              <div class="swatch" data-theme="midnight" onclick="selectTheme('midnight')">
+                <div class="swatch-inner" style="background: #1a1a2e;"></div>
+                <span class="swatch-check">&#10003;</span>
+              </div>
+              <div class="swatch" data-theme="warm" onclick="selectTheme('warm')">
+                <div class="swatch-inner" style="background: #2d2025;"></div>
+                <span class="swatch-check">&#10003;</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Data -->
+      <div class="section-group">
+        <div class="section-label">Data</div>
+        <div class="section-card">
+          <div class="settings-row" style="cursor: default;">
+            <div class="row-label">Export My Data</div>
+            <div class="row-info">Coming soon</div>
+          </div>
+          <div class="settings-row" onclick="showDeleteDialog()">
+            <div class="row-label danger">Delete Account</div>
+            <div class="row-chevron" style="color: rgba(232,93,117,0.5);">&#8250;</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Logout dialog -->
+  <div class="dialog-overlay" id="logoutDialog">
+    <div class="dialog-box">
+      <div class="dialog-title">Log out?</div>
+      <div class="dialog-message">Are you sure you want to log out?</div>
+      <div class="dialog-buttons">
+        <button class="dialog-btn stay" onclick="closeDialog('logoutDialog')">Stay</button>
+        <button class="dialog-btn action" onclick="confirmLogout()">Log Out</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete account dialog -->
+  <div class="dialog-overlay" id="deleteDialog">
+    <div class="dialog-box">
+      <div class="dialog-title">Delete account?</div>
+      <div class="dialog-message" id="deleteMessage">This action cannot be undone. All your data will be permanently removed.</div>
+      <div class="dialog-buttons" id="deleteButtons">
+        <button class="dialog-btn stay" onclick="closeDialog('deleteDialog')">Cancel</button>
+        <button class="dialog-btn danger" onclick="confirmDelete()">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    var BACKEND_URL = 'https://kira-backend-lcwr.onrender.com';
+    var userId = new URLSearchParams(window.location.search).get('user') || 'user_1';
+    var userData = {};
+
+    // ── Loading screen ──
+    function hideLoading() {
+      var screen = document.getElementById('loadingScreen');
+      screen.style.opacity = '0';
+      setTimeout(function() {
+        screen.style.display = 'none';
+      }, 400);
+    }
+
+    if (document.fonts) {
+      document.fonts.ready.then(function() {
+        setTimeout(hideLoading, 300);
+      });
+    } else {
+      window.addEventListener('load', function() {
+        setTimeout(hideLoading, 300);
+      });
+    }
+
+    // ── Prevent body scroll ──
+    var scrollContainerEl = document.getElementById('scrollContainer');
+
+    document.addEventListener('touchmove', function(e) {
+      var target = e.target;
+      while (target && target !== document.body && target !== document.documentElement) {
+        if (target === scrollContainerEl) return;
+        target = target.parentNode;
+      }
+      e.preventDefault();
+    }, { passive: false });
+
+    // ── Keyboard fix ──
+    var pageWrapper = document.querySelector('.page-wrapper');
+    var lastViewportHeight = window.innerHeight;
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', function() {
+        var newHeight = window.visualViewport.height;
+        pageWrapper.style.height = newHeight + 'px';
+        window.scrollTo(0, 0);
+        document.body.scrollTop = 0;
+        document.documentElement.scrollTop = 0;
+        lastViewportHeight = newHeight;
+      });
+
+      window.visualViewport.addEventListener('scroll', function() {
+        window.scrollTo(0, 0);
+      });
+    }
+
+    // ── Fetch user profile ──
+    async function loadProfile() {
+      try {
+        var response = await fetch(BACKEND_URL + '/home_data?user_id=' + encodeURIComponent(userId));
+        var data = await response.json();
+        userData = data;
+
+        var name = data.name || userId;
+        var initial = name.charAt(0).toUpperCase();
+
+        document.getElementById('profileAvatar').textContent = initial;
+        document.getElementById('profileName').textContent = name;
+        document.getElementById('profileUsername').textContent = '@' + userId;
+        document.getElementById('editName').value = name;
+
+        if (data.age) {
+          document.getElementById('editAge').value = data.age;
+        }
+      } catch (err) {
+        // Fallback to userId
+        var initial = userId.charAt(0).toUpperCase();
+        document.getElementById('profileAvatar').textContent = initial;
+        document.getElementById('profileName').textContent = userId;
+        document.getElementById('profileUsername').textContent = '@' + userId;
+      }
+    }
+
+    loadProfile();
+
+    // ── Edit Profile ──
+    var editOpen = false;
+
+    function toggleEditProfile() {
+      editOpen = !editOpen;
+      var panel = document.getElementById('editPanel');
+      var chevron = document.getElementById('editChevron');
+
+      if (editOpen) {
+        panel.classList.add('open');
+        chevron.style.transform = 'rotate(90deg)';
+        chevron.style.transition = 'transform 0.25s ease';
+      } else {
+        panel.classList.remove('open');
+        chevron.style.transform = 'rotate(0deg)';
+      }
+    }
+
+    async function saveProfile(e) {
+      e.stopPropagation();
+      var nameVal = document.getElementById('editName').value.trim();
+      var ageVal = parseInt(document.getElementById('editAge').value) || 0;
+      var saveBtn = document.getElementById('saveBtn');
+      var saveStatus = document.getElementById('saveStatus');
+
+      if (!nameVal) {
+        saveStatus.textContent = 'Please enter a name';
+        saveStatus.style.color = 'var(--rose)';
+        return;
+      }
+
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+      saveStatus.textContent = '';
+
+      try {
+        await fetch(BACKEND_URL + '/save_onboarding', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: userId,
+            name: nameVal,
+            age: ageVal
+          })
+        });
+
+        // Update displayed profile
+        var initial = nameVal.charAt(0).toUpperCase();
+        document.getElementById('profileAvatar').textContent = initial;
+        document.getElementById('profileName').textContent = nameVal;
+
+        saveStatus.style.color = 'var(--lavender)';
+        saveStatus.textContent = 'Saved successfully';
+        saveBtn.textContent = 'Save Changes';
+        saveBtn.disabled = false;
+
+        setTimeout(function() {
+          saveStatus.style.opacity = '0';
+          setTimeout(function() {
+            saveStatus.textContent = '';
+            saveStatus.style.opacity = '1';
+          }, 300);
+        }, 2000);
+
+      } catch (err) {
+        saveStatus.style.color = 'var(--rose)';
+        saveStatus.textContent = 'Failed to save. Try again.';
+        saveBtn.textContent = 'Save Changes';
+        saveBtn.disabled = false;
+      }
+    }
+
+    // ── Theme selection ──
+    var currentTheme = localStorage.getItem('kira_theme') || 'default';
+    updateThemeUI();
+
+    function selectTheme(theme) {
+      currentTheme = theme;
+      localStorage.setItem('kira_theme', theme);
+      updateThemeUI();
+    }
+
+    function updateThemeUI() {
+      var swatches = document.querySelectorAll('.swatch');
+      swatches.forEach(function(s) {
+        if (s.dataset.theme === currentTheme) {
+          s.classList.add('active');
+        } else {
+          s.classList.remove('active');
+        }
+      });
+    }
+
+    // ── Dialogs ──
+    function showLogoutDialog() {
+      document.getElementById('logoutDialog').classList.add('visible');
+    }
+
+    function showDeleteDialog() {
+      // Reset delete dialog to initial state
+      document.getElementById('deleteMessage').textContent = 'This action cannot be undone. All your data will be permanently removed.';
+      var buttons = document.getElementById('deleteButtons');
+      buttons.innerHTML = '<button class="dialog-btn stay" onclick="closeDialog(\'deleteDialog\')">Cancel</button><button class="dialog-btn danger" onclick="confirmDelete()">Delete</button>';
+      document.getElementById('deleteDialog').classList.add('visible');
+    }
+
+    function closeDialog(id) {
+      document.getElementById(id).classList.remove('visible');
+    }
+
+    function confirmLogout() {
+      closeDialog('logoutDialog');
+      try {
+        window.AppInventor.setWebViewString('navigate:logout');
+      } catch (e) {}
+    }
+
+    function confirmDelete() {
+      document.getElementById('deleteMessage').textContent = 'Contact support to delete your account.';
+      var buttons = document.getElementById('deleteButtons');
+      buttons.innerHTML = '<button class="dialog-btn action" onclick="closeDialog(\'deleteDialog\')" style="flex:1;">Got it</button>';
+    }
+
+    // Close dialogs on overlay tap
+    document.querySelectorAll('.dialog-overlay').forEach(function(overlay) {
+      overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) {
+          overlay.classList.remove('visible');
+        }
+      });
+    });
+
+    // ── Navigation ──
+    function goBack() {
+      try {
+        window.AppInventor.setWebViewString('navigate:home');
+      } catch (e) {}
+    }
+  </script>
+</body>
+</html>

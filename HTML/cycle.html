@@ -1,0 +1,1250 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Kira - Your Cycle</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=DM+Sans:wght@300;400;500&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --rose: #e8a5b0;
+      --blush: #f2c4ce;
+      --lavender: #c9b8e8;
+      --deep: #2d1f35;
+      --card: rgba(255, 255, 255, 0.09);
+      --border: rgba(255, 255, 255, 0.14);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html { height: 100%; overflow: hidden; }
+
+    body {
+      height: 100%;
+      background: var(--deep);
+      font-family: 'DM Sans', sans-serif;
+      color: white;
+      overflow: hidden;
+      position: fixed;
+      width: 100%;
+      top: 0;
+      left: 0;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -30%;
+      left: -20%;
+      width: 70%;
+      height: 70%;
+      background: radial-gradient(circle, rgba(201, 184, 232, 0.22) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      bottom: -20%;
+      right: -20%;
+      width: 60%;
+      height: 60%;
+      background: radial-gradient(circle, rgba(232, 165, 176, 0.18) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Loading screen */
+    .loading-screen {
+      position: fixed;
+      inset: 0;
+      background: var(--deep);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      transition: opacity 0.4s ease;
+    }
+
+    .loading-screen.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .loading-avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--lavender), var(--rose));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      animation: pulse 1.6s ease-in-out infinite;
+      box-shadow: 0 0 30px rgba(201, 184, 232, 0.3);
+    }
+
+    .loading-text {
+      margin-top: 16px;
+      font-size: 12px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.35);
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.08); opacity: 0.7; }
+    }
+
+    /* Page wrapper */
+    .page-wrapper {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      height: 100dvh;
+      position: relative;
+      z-index: 1;
+      overflow: hidden;
+    }
+
+    /* Header */
+    .header {
+      padding: 16px 20px 12px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-shrink: 0;
+    }
+
+    .back-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: rgba(255, 255, 255, 0.6);
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: transform 0.15s;
+      backdrop-filter: blur(10px);
+    }
+
+    .back-btn:active { transform: scale(0.92); }
+
+    .header-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 28px;
+      font-weight: 300;
+      font-style: italic;
+      color: white;
+      line-height: 1;
+    }
+
+    /* Scrollable container */
+    .container {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 0 20px 30px;
+      max-width: 420px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* Month navigation */
+    .month-nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 14px 0 10px;
+    }
+
+    .month-arrow {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: rgba(255, 255, 255, 0.5);
+      cursor: pointer;
+      transition: transform 0.15s;
+      backdrop-filter: blur(10px);
+    }
+
+    .month-arrow:active { transform: scale(0.92); }
+
+    .month-label {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px;
+      font-weight: 300;
+      font-style: italic;
+      color: white;
+      min-width: 160px;
+      text-align: center;
+    }
+
+    /* Day labels */
+    .day-labels {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      text-align: center;
+      padding: 8px 0;
+    }
+
+    .day-labels span {
+      font-size: 11px;
+      letter-spacing: 1px;
+      color: rgba(255, 255, 255, 0.3);
+      font-weight: 400;
+    }
+
+    /* Calendar grid */
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      padding-bottom: 16px;
+    }
+
+    .cal-day {
+      aspect-ratio: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.8);
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.12s, background 0.2s;
+      min-height: 44px;
+    }
+
+    .cal-day:active { transform: scale(0.9); }
+    .cal-day.empty { pointer-events: none; }
+
+    .cal-day.past { opacity: 0.5; }
+
+    .cal-day.menstrual { background: rgba(232, 165, 176, 0.3); }
+    .cal-day.follicular { background: rgba(201, 184, 232, 0.2); }
+    .cal-day.ovulatory { background: rgba(201, 184, 232, 0.5); }
+    .cal-day.luteal { background: rgba(176, 154, 181, 0.25); }
+
+    .cal-day.today {
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8), 0 0 12px rgba(255, 255, 255, 0.3);
+      color: white;
+      font-weight: 500;
+    }
+
+    .cal-day .day-num { line-height: 1; z-index: 1; }
+
+    .cal-day .period-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--rose);
+      position: absolute;
+      bottom: 4px;
+      box-shadow: 0 0 6px rgba(232, 165, 176, 0.5);
+    }
+
+    .cal-day .pms-indicator {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      font-size: 8px;
+      opacity: 0.6;
+      line-height: 1;
+    }
+
+    /* Phase summary card */
+    .phase-card {
+      background: linear-gradient(135deg, rgba(201, 184, 232, 0.18), rgba(232, 165, 176, 0.12));
+      border: 1px solid rgba(201, 184, 232, 0.2);
+      border-radius: 24px;
+      padding: 24px;
+      margin-bottom: 14px;
+      backdrop-filter: blur(20px);
+      position: relative;
+      overflow: hidden;
+      animation: fadeUp 0.5s ease both;
+    }
+
+    .phase-card::after {
+      content: '';
+      position: absolute;
+      top: -50px;
+      right: -50px;
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(201, 184, 232, 0.2), transparent 70%);
+      pointer-events: none;
+    }
+
+    .section-label {
+      font-size: 10px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--lavender);
+      opacity: 0.7;
+      margin-bottom: 8px;
+    }
+
+    .phase-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 36px;
+      font-weight: 300;
+      font-style: italic;
+      color: white;
+      line-height: 1.1;
+      margin-bottom: 4px;
+    }
+
+    .phase-meta {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.45);
+      margin-bottom: 16px;
+    }
+
+    .phase-desc {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.55);
+      line-height: 1.6;
+    }
+
+    .personalised-badge {
+      display: inline-block;
+      background: rgba(201, 184, 232, 0.2);
+      border: 1px solid rgba(201, 184, 232, 0.3);
+      border-radius: 12px;
+      padding: 3px 10px;
+      font-size: 10px;
+      letter-spacing: 1px;
+      color: var(--lavender);
+      margin-top: 12px;
+    }
+
+    .muted-badge {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.3);
+      margin-top: 12px;
+    }
+
+    /* Forecast strip */
+    .forecast-section {
+      margin-bottom: 14px;
+      animation: fadeUp 0.5s 0.08s ease both;
+    }
+
+    .forecast-label {
+      font-size: 10px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--lavender);
+      opacity: 0.7;
+      margin-bottom: 10px;
+    }
+
+    .forecast-strip {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 6px;
+      scrollbar-width: none;
+    }
+
+    .forecast-strip::-webkit-scrollbar { display: none; }
+
+    .forecast-pill {
+      flex-shrink: 0;
+      width: 52px;
+      height: 68px;
+      border-radius: 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      border: 1px solid var(--border);
+      backdrop-filter: blur(10px);
+    }
+
+    .forecast-pill .fp-day {
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.4);
+      letter-spacing: 0.5px;
+    }
+
+    .forecast-pill .fp-num {
+      font-size: 16px;
+      font-weight: 500;
+      color: white;
+    }
+
+    .forecast-pill.menstrual { background: rgba(232, 165, 176, 0.3); }
+    .forecast-pill.follicular { background: rgba(201, 184, 232, 0.2); }
+    .forecast-pill.ovulatory { background: rgba(201, 184, 232, 0.5); }
+    .forecast-pill.luteal { background: rgba(176, 154, 181, 0.25); }
+
+    /* Report period button */
+    .report-btn {
+      width: 100%;
+      padding: 18px;
+      border: none;
+      border-radius: 20px;
+      background: linear-gradient(135deg, var(--rose), var(--blush));
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--deep);
+      cursor: pointer;
+      transition: transform 0.15s, opacity 0.15s;
+      margin-bottom: 14px;
+      animation: fadeUp 0.5s 0.16s ease both;
+      min-height: 54px;
+    }
+
+    .report-btn:active { transform: scale(0.97); opacity: 0.85; }
+
+    /* Stats card */
+    .stats-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 22px 24px;
+      backdrop-filter: blur(20px);
+      animation: fadeUp 0.5s 0.24s ease both;
+      margin-bottom: 20px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 14px;
+    }
+
+    .stat-item {}
+
+    .stat-value {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 28px;
+      font-weight: 300;
+      font-style: italic;
+      color: white;
+      line-height: 1;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.35);
+      margin-top: 4px;
+    }
+
+    /* Bottom sheet */
+    .sheet-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(6px);
+      z-index: 50;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .sheet-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .bottom-sheet {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(180deg, #3d2c4a 0%, #2d1f35 100%);
+      border-top-left-radius: 28px;
+      border-top-right-radius: 28px;
+      padding: 24px 24px 36px;
+      z-index: 51;
+      transform: translateY(100%);
+      transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+
+    .bottom-sheet.open { transform: translateY(0); }
+
+    .sheet-handle {
+      width: 40px;
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.2);
+      margin: 0 auto 20px;
+    }
+
+    .sheet-date {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 24px;
+      font-weight: 300;
+      font-style: italic;
+      color: white;
+      margin-bottom: 4px;
+    }
+
+    .sheet-phase {
+      font-size: 12px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--lavender);
+      opacity: 0.7;
+      margin-bottom: 18px;
+    }
+
+    .sheet-section-label {
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.35);
+      margin-bottom: 8px;
+    }
+
+    .sheet-tendencies {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-bottom: 18px;
+    }
+
+    .sheet-pill {
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 5px 13px;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .sheet-pill.warm {
+      background: rgba(232, 165, 176, 0.15);
+      border-color: rgba(232, 165, 176, 0.25);
+      color: var(--blush);
+    }
+
+    .sheet-pill.cool {
+      background: rgba(201, 184, 232, 0.15);
+      border-color: rgba(201, 184, 232, 0.25);
+      color: var(--lavender);
+    }
+
+    .sheet-personal {
+      background: rgba(201, 184, 232, 0.1);
+      border: 1px solid rgba(201, 184, 232, 0.2);
+      border-radius: 16px;
+      padding: 14px 16px;
+      margin-bottom: 18px;
+    }
+
+    .sheet-personal-label {
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--lavender);
+      opacity: 0.7;
+      margin-bottom: 6px;
+    }
+
+    .sheet-personal-text {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.5;
+    }
+
+    .energy-bar-container {
+      margin-bottom: 18px;
+    }
+
+    .energy-label {
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.35);
+      margin-bottom: 8px;
+    }
+
+    .energy-bar {
+      height: 6px;
+      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+    }
+
+    .energy-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: linear-gradient(90deg, var(--rose), var(--lavender));
+      transition: width 0.5s ease;
+    }
+
+    .energy-text {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.4);
+      margin-top: 6px;
+    }
+
+    .sheet-close {
+      width: 100%;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: var(--card);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.6);
+      cursor: pointer;
+      transition: transform 0.15s;
+      min-height: 48px;
+    }
+
+    .sheet-close:active { transform: scale(0.97); }
+
+    /* Confirm dialog */
+    .confirm-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(8px);
+      z-index: 60;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .confirm-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .confirm-box {
+      background: linear-gradient(180deg, #3d2c4a 0%, #2d1f35 100%);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 28px 24px;
+      width: 85%;
+      max-width: 320px;
+      text-align: center;
+      transform: scale(0.9);
+      transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+
+    .confirm-overlay.open .confirm-box { transform: scale(1); }
+
+    .confirm-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px;
+      font-weight: 300;
+      font-style: italic;
+      color: white;
+      margin-bottom: 8px;
+    }
+
+    .confirm-text {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.5);
+      margin-bottom: 22px;
+      line-height: 1.5;
+    }
+
+    .confirm-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .confirm-btn {
+      flex: 1;
+      padding: 14px;
+      border-radius: 16px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: transform 0.15s;
+      border: none;
+      min-height: 48px;
+    }
+
+    .confirm-btn:active { transform: scale(0.95); }
+
+    .confirm-btn.cancel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .confirm-btn.yes {
+      background: linear-gradient(135deg, var(--rose), var(--blush));
+      color: var(--deep);
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: linear-gradient(135deg, rgba(74, 53, 88, 0.95), rgba(45, 31, 53, 0.95));
+      border: 1px solid rgba(201, 184, 232, 0.3);
+      border-radius: 20px;
+      padding: 14px 24px;
+      font-size: 13px;
+      color: white;
+      z-index: 70;
+      backdrop-filter: blur(20px);
+      transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+      white-space: nowrap;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* Error state */
+    .error-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 32px 24px;
+      text-align: center;
+      backdrop-filter: blur(20px);
+    }
+
+    .error-icon {
+      font-size: 36px;
+      margin-bottom: 12px;
+    }
+
+    .error-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px;
+      font-weight: 300;
+      font-style: italic;
+      color: white;
+      margin-bottom: 8px;
+    }
+
+    .error-text {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.45);
+      line-height: 1.5;
+      margin-bottom: 18px;
+    }
+
+    .retry-btn {
+      padding: 12px 28px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: var(--card);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.6);
+      cursor: pointer;
+      min-height: 44px;
+    }
+
+    /* Animations */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Loading screen -->
+  <div class="loading-screen" id="loadingScreen">
+    <div class="loading-avatar">✦</div>
+    <div class="loading-text">Syncing your cycle</div>
+  </div>
+
+  <div class="page-wrapper">
+    <!-- Header -->
+    <div class="header">
+      <div class="back-btn" onclick="navigate('home')">←</div>
+      <div class="header-title">Your Cycle</div>
+    </div>
+
+    <!-- Content -->
+    <div class="container" id="mainContent">
+      <!-- Month nav -->
+      <div class="month-nav">
+        <div class="month-arrow" onclick="changeMonth(-1)">←</div>
+        <div class="month-label" id="monthLabel">April 2026</div>
+        <div class="month-arrow" onclick="changeMonth(1)">→</div>
+      </div>
+
+      <!-- Day labels -->
+      <div class="day-labels">
+        <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+      </div>
+
+      <!-- Calendar -->
+      <div class="calendar-grid" id="calendarGrid"></div>
+
+      <!-- Phase summary -->
+      <div class="phase-card" id="phaseCard">
+        <div class="section-label">Current Phase</div>
+        <div class="phase-name" id="phaseName">--</div>
+        <div class="phase-meta" id="phaseMeta">--</div>
+        <div class="phase-desc" id="phaseDesc"></div>
+        <div id="personalisedBadge"></div>
+      </div>
+
+      <!-- 7-day forecast -->
+      <div class="forecast-section">
+        <div class="forecast-label">Next 7 days</div>
+        <div class="forecast-strip" id="forecastStrip"></div>
+      </div>
+
+      <!-- Report period -->
+      <button class="report-btn" onclick="showConfirm()">My period arrived today</button>
+
+      <!-- Stats -->
+      <div class="stats-card" id="statsCard">
+        <div class="section-label">Cycle Stats</div>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-value" id="statTracked">--</div>
+            <div class="stat-label">Cycles tracked</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="statAvgLength">--</div>
+            <div class="stat-label">Avg cycle length</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom sheet overlay -->
+  <div class="sheet-overlay" id="sheetOverlay" onclick="closeSheet()"></div>
+  <div class="bottom-sheet" id="bottomSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-date" id="sheetDate"></div>
+    <div class="sheet-phase" id="sheetPhase"></div>
+
+    <div class="sheet-section-label">Tendencies</div>
+    <div class="sheet-tendencies" id="sheetTendencies"></div>
+
+    <div id="sheetPersonalWrap" style="display:none;">
+      <div class="sheet-personal">
+        <div class="sheet-personal-label">✦ Your pattern</div>
+        <div class="sheet-personal-text" id="sheetPersonalText"></div>
+      </div>
+    </div>
+
+    <div class="energy-bar-container">
+      <div class="energy-label">Typical energy</div>
+      <div class="energy-bar"><div class="energy-fill" id="energyFill" style="width:50%"></div></div>
+      <div class="energy-text" id="energyText">Moderate</div>
+    </div>
+
+    <button class="sheet-close" onclick="closeSheet()">Close</button>
+  </div>
+
+  <!-- Confirm dialog -->
+  <div class="confirm-overlay" id="confirmOverlay">
+    <div class="confirm-box">
+      <div class="confirm-title">Log your period?</div>
+      <div class="confirm-text">This will update your cycle tracking and predictions.</div>
+      <div class="confirm-actions">
+        <button class="confirm-btn cancel" onclick="hideConfirm()">Cancel</button>
+        <button class="confirm-btn yes" onclick="reportPeriod()">Yes, log it</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    var API = 'https://kira-backend-lcwr.onrender.com';
+    var USER_ID = new URLSearchParams(window.location.search).get('user') || 'user_1';
+    var cycleData = null;
+    var homeData = null;
+    var viewYear, viewMonth;
+    var today = new Date();
+
+    // Default tendencies per phase
+    var defaultTendencies = {
+      menstrual: ['Low energy', 'Introspective', 'Rest needed', 'High sensitivity'],
+      follicular: ['Rising energy', 'Creative clarity', 'Motivated', 'Social openness'],
+      ovulatory: ['Peak confidence', 'High energy', 'Communicative', 'Assertive'],
+      luteal: ['Higher sensitivity', 'Craving intensity', 'Lower energy', 'Introspective']
+    };
+
+    var phaseDescriptions = {
+      menstrual: 'Your body is shedding and renewing. Honour the need for rest and gentle movement. This is your inner winter.',
+      follicular: 'Energy is building as oestrogen rises. A great time for new projects, social plans, and creative work.',
+      ovulatory: 'You are at your peak. Confidence, communication, and energy are highest. Lean into connection.',
+      luteal: 'Progesterone rises, and you may feel more inward. Cravings and sensitivity are normal. Be gentle with yourself.'
+    };
+
+    var phaseEnergy = {
+      menstrual: { pct: 25, text: 'Low — rest and restore' },
+      follicular: { pct: 60, text: 'Rising — building momentum' },
+      ovulatory: { pct: 90, text: 'High — peak vitality' },
+      luteal: { pct: 40, text: 'Winding down — conserve energy' }
+    };
+
+    // Init current view month
+    viewYear = today.getFullYear();
+    viewMonth = today.getMonth();
+
+    // Navigation
+    var navigating = false;
+    function navigate(screen) {
+      if (navigating) return;
+      navigating = true;
+      try { window.AppInventor.setWebViewString('navigate:' + screen); } catch (e) {}
+    }
+
+    // Load data
+    function init() {
+      var loaded = 0;
+      var failed = false;
+
+      function checkDone() {
+        loaded++;
+        if (loaded >= 2 && !failed) {
+          render();
+          var ls = document.getElementById('loadingScreen');
+          ls.classList.add('hidden');
+          setTimeout(function () { ls.style.display = 'none'; }, 400);
+        }
+      }
+
+      function handleError() {
+        if (failed) return;
+        failed = true;
+        document.getElementById('loadingScreen').classList.add('hidden');
+        document.getElementById('mainContent').innerHTML =
+          '<div class="error-card">' +
+          '<div class="error-icon">✦</div>' +
+          '<div class="error-title">Could not load cycle data</div>' +
+          '<div class="error-text">Check your connection and try again. If this is your first time, start by logging a period.</div>' +
+          '<button class="retry-btn" onclick="location.reload()">Try again</button>' +
+          '</div>';
+      }
+
+      fetch(API + '/cycle_status?user_id=' + USER_ID)
+        .then(function (r) {
+          if (!r.ok) throw new Error('no data');
+          return r.json();
+        })
+        .then(function (d) { cycleData = d; checkDone(); })
+        .catch(function () {
+          // Allow loading without cycle data — show empty state
+          cycleData = { cycle_day: 1, phase: 'follicular', cycle_length: 28, next_period_in_days: 28, periods_tracked: 0 };
+          checkDone();
+        });
+
+      fetch(API + '/home_data?user_id=' + USER_ID)
+        .then(function (r) {
+          if (!r.ok) throw new Error('no data');
+          return r.json();
+        })
+        .then(function (d) { homeData = d; checkDone(); })
+        .catch(function () {
+          homeData = null;
+          checkDone();
+        });
+    }
+
+    function getPhaseForCycleDay(cd, cycleLen) {
+      if (cd <= 5) return 'menstrual';
+      if (cd <= 13) return 'follicular';
+      if (cd <= 16) return 'ovulatory';
+      return 'luteal';
+    }
+
+    // Calculate the cycle day for any given date
+    function cycleDayForDate(date, lastPeriodDate, cycleLen) {
+      var lp = new Date(lastPeriodDate + 'T00:00:00');
+      var d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      var diff = Math.floor((d - lp) / 86400000);
+      var cd = ((diff % cycleLen) + cycleLen) % cycleLen;
+      return cd === 0 ? cycleLen : cd;
+    }
+
+    // Get last period date from cycle_status data
+    function getLastPeriodDate() {
+      // Calculate from cycle_day and today
+      var cd = cycleData.cycle_day;
+      var d = new Date(today);
+      d.setDate(d.getDate() - (cd - 1));
+      return d.getFullYear() + '-' +
+        String(d.getMonth() + 1).padStart(2, '0') + '-' +
+        String(d.getDate()).padStart(2, '0');
+    }
+
+    function render() {
+      renderCalendar();
+      renderPhaseCard();
+      renderForecast();
+      renderStats();
+    }
+
+    function renderCalendar() {
+      var grid = document.getElementById('calendarGrid');
+      grid.innerHTML = '';
+
+      var firstDay = new Date(viewYear, viewMonth, 1).getDay();
+      var daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+      var cycleLen = cycleData.cycle_length || 28;
+      var lpd = getLastPeriodDate();
+      var todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+
+      // Next period start date
+      var nextPeriodDate = new Date(today);
+      nextPeriodDate.setDate(nextPeriodDate.getDate() + (cycleData.next_period_in_days || 0));
+
+      // Month label
+      var months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      document.getElementById('monthLabel').textContent = months[viewMonth] + ' ' + viewYear;
+
+      // Empty cells for offset
+      for (var i = 0; i < firstDay; i++) {
+        var empty = document.createElement('div');
+        empty.className = 'cal-day empty';
+        grid.appendChild(empty);
+      }
+
+      for (var day = 1; day <= daysInMonth; day++) {
+        var dateObj = new Date(viewYear, viewMonth, day);
+        var dateStr = viewYear + '-' + String(viewMonth + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+        var cd = cycleDayForDate(dateObj, lpd, cycleLen);
+        var phase = getPhaseForCycleDay(cd, cycleLen);
+
+        var cell = document.createElement('div');
+        cell.className = 'cal-day ' + phase;
+
+        // Past days
+        if (dateObj < new Date(today.getFullYear(), today.getMonth(), today.getDate())) {
+          cell.classList.add('past');
+        }
+
+        // Today
+        if (dateStr === todayStr) {
+          cell.classList.add('today');
+        }
+
+        // Day number
+        var numEl = document.createElement('span');
+        numEl.className = 'day-num';
+        numEl.textContent = day;
+        cell.appendChild(numEl);
+
+        // Predicted next period start dot
+        var npStr = nextPeriodDate.getFullYear() + '-' + String(nextPeriodDate.getMonth() + 1).padStart(2, '0') + '-' + String(nextPeriodDate.getDate()).padStart(2, '0');
+        if (dateStr === npStr) {
+          var dot = document.createElement('span');
+          dot.className = 'period-dot';
+          cell.appendChild(dot);
+        }
+
+        // PMS window (5 days before next period)
+        var daysUntilPeriod = Math.floor((nextPeriodDate - dateObj) / 86400000);
+        if (daysUntilPeriod > 0 && daysUntilPeriod <= 5 && dateObj >= new Date(today.getFullYear(), today.getMonth(), today.getDate())) {
+          var pms = document.createElement('span');
+          pms.className = 'pms-indicator';
+          pms.textContent = '\u26a0\ufe0f';
+          cell.appendChild(pms);
+        }
+
+        // Tap handler
+        (function (d, p, cday, ds) {
+          cell.onclick = function () { openSheet(d, p, cday, ds); };
+        })(dateObj, phase, cd, dateStr);
+
+        grid.appendChild(cell);
+      }
+    }
+
+    function renderPhaseCard() {
+      var phase = cycleData.phase;
+      var phaseCap = phase.charAt(0).toUpperCase() + phase.slice(1);
+      document.getElementById('phaseName').textContent = phaseCap;
+      document.getElementById('phaseMeta').textContent =
+        'Day ' + cycleData.cycle_day + ' \u00b7 ' + cycleData.next_period_in_days + ' days until next period';
+      document.getElementById('phaseDesc').textContent = phaseDescriptions[phase] || '';
+
+      var badgeEl = document.getElementById('personalisedBadge');
+      if (homeData && homeData.personalised) {
+        badgeEl.innerHTML = '<div class="personalised-badge">\u2728 Based on your data</div>';
+      } else {
+        badgeEl.innerHTML = '<div class="muted-badge">Typical for this phase</div>';
+      }
+    }
+
+    function renderForecast() {
+      var strip = document.getElementById('forecastStrip');
+      strip.innerHTML = '';
+      var cycleLen = cycleData.cycle_length || 28;
+      var lpd = getLastPeriodDate();
+      var dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+      for (var i = 0; i < 7; i++) {
+        var d = new Date(today);
+        d.setDate(d.getDate() + i);
+        var cd = cycleDayForDate(d, lpd, cycleLen);
+        var phase = getPhaseForCycleDay(cd, cycleLen);
+
+        var pill = document.createElement('div');
+        pill.className = 'forecast-pill ' + phase;
+
+        var dayLabel = document.createElement('span');
+        dayLabel.className = 'fp-day';
+        dayLabel.textContent = i === 0 ? 'Today' : dayNames[d.getDay()];
+        pill.appendChild(dayLabel);
+
+        var numLabel = document.createElement('span');
+        numLabel.className = 'fp-num';
+        numLabel.textContent = d.getDate();
+        pill.appendChild(numLabel);
+
+        strip.appendChild(pill);
+      }
+    }
+
+    function renderStats() {
+      document.getElementById('statTracked').textContent = cycleData.periods_tracked || 0;
+      document.getElementById('statAvgLength').textContent = (cycleData.cycle_length || 28) + 'd';
+    }
+
+    // Month navigation
+    function changeMonth(dir) {
+      viewMonth += dir;
+      if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+      if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+      renderCalendar();
+    }
+
+    // Bottom sheet
+    function openSheet(dateObj, phase, cycleDay, dateStr) {
+      var months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      document.getElementById('sheetDate').textContent =
+        months[dateObj.getMonth()] + ' ' + dateObj.getDate() + ', ' + dateObj.getFullYear();
+
+      var phaseCap = phase.charAt(0).toUpperCase() + phase.slice(1);
+      document.getElementById('sheetPhase').textContent = phaseCap + ' Phase \u00b7 Day ' + cycleDay;
+
+      // Tendencies
+      var tendencies = defaultTendencies[phase] || [];
+      var tendHtml = '';
+      for (var i = 0; i < tendencies.length; i++) {
+        var cls = 'sheet-pill';
+        if (i < 2) cls += phase === 'menstrual' || phase === 'luteal' ? ' warm' : ' cool';
+        tendHtml += '<span class="' + cls + '">' + tendencies[i] + '</span>';
+      }
+      document.getElementById('sheetTendencies').innerHTML = tendHtml;
+
+      // Personalised data
+      var personalWrap = document.getElementById('sheetPersonalWrap');
+      if (homeData && homeData.personalised && homeData.tendencies && homeData.tendencies.length > 0 && homeData.phase === phase) {
+        personalWrap.style.display = 'block';
+        document.getElementById('sheetPersonalText').textContent =
+          '\u2726 ' + homeData.tendencies.join(', ');
+      } else {
+        personalWrap.style.display = 'none';
+      }
+
+      // Energy
+      var energy = phaseEnergy[phase] || { pct: 50, text: 'Moderate' };
+      document.getElementById('energyFill').style.width = energy.pct + '%';
+      document.getElementById('energyText').textContent = energy.text;
+
+      document.getElementById('sheetOverlay').classList.add('open');
+      document.getElementById('bottomSheet').classList.add('open');
+    }
+
+    function closeSheet() {
+      document.getElementById('sheetOverlay').classList.remove('open');
+      document.getElementById('bottomSheet').classList.remove('open');
+    }
+
+    // Confirm dialog
+    function showConfirm() {
+      document.getElementById('confirmOverlay').classList.add('open');
+    }
+
+    function hideConfirm() {
+      document.getElementById('confirmOverlay').classList.remove('open');
+    }
+
+    function reportPeriod() {
+      hideConfirm();
+      var todayStr = today.getFullYear() + '-' +
+        String(today.getMonth() + 1).padStart(2, '0') + '-' +
+        String(today.getDate()).padStart(2, '0');
+
+      fetch(API + '/report_period', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ period_date: todayStr, user_id: USER_ID })
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          showToast('Period logged \u2014 predictions updated');
+          // Refresh data
+          setTimeout(function () { location.reload(); }, 1500);
+        })
+        .catch(function () {
+          showToast('Could not save. Try again.');
+        });
+    }
+
+    function showToast(msg) {
+      var t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(function () { t.classList.remove('show'); }, 3000);
+    }
+
+    // Start
+    init();
+  </script>
+</body>
+
+</html>

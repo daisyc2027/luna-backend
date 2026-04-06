@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Kira — Your Toolkit</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --rose: #e8a5b0;
+      --blush: #f2c4ce;
+      --lavender: #c9b8e8;
+      --deep: #2d1f35;
+      --card: rgba(255, 255, 255, 0.09);
+      --border: rgba(255, 255, 255, 0.14);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+      height: 100%;
+      background: var(--deep);
+      font-family: 'DM Sans', sans-serif;
+      color: white;
+      overflow: hidden;
+      position: fixed;
+      width: 100%;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -30%;
+      left: -20%;
+      width: 70%;
+      height: 70%;
+      background: radial-gradient(circle, rgba(201, 184, 232, 0.22) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      bottom: -20%;
+      right: -20%;
+      width: 60%;
+      height: 60%;
+      background: radial-gradient(circle, rgba(232, 165, 176, 0.18) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page-wrapper {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      height: 100dvh;
+      position: relative;
+      z-index: 1;
+      overflow: hidden;
+    }
+
+    /* ── Loading Screen ── */
+    .loading-screen {
+      position: fixed;
+      inset: 0;
+      background: var(--deep);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      transition: opacity 0.5s ease;
+    }
+
+    .loading-screen.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .loading-avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--lavender), var(--rose));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      animation: pulse 1.8s ease-in-out infinite;
+      box-shadow: 0 0 30px rgba(201, 184, 232, 0.3);
+    }
+
+    .loading-text {
+      margin-top: 16px;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.4);
+      letter-spacing: 2px;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.08); opacity: 0.7; }
+    }
+
+    /* ── Header ── */
+    .header {
+      padding: 16px 20px 12px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-shrink: 0;
+      max-width: 420px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .back-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: rgba(255, 255, 255, 0.6);
+      cursor: pointer;
+      flex-shrink: 0;
+      backdrop-filter: blur(10px);
+      transition: transform 0.15s;
+    }
+
+    .back-btn:active {
+      transform: scale(0.92);
+    }
+
+    .header-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 32px;
+      font-weight: 300;
+      font-style: italic;
+      color: white;
+      line-height: 1;
+    }
+
+    /* ── Scrollable Content ── */
+    .container {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 0 20px 24px;
+      max-width: 420px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* ── Intro Card ── */
+    .intro-card {
+      background: linear-gradient(135deg, rgba(74, 53, 88, 0.85), rgba(45, 31, 53, 0.9));
+      border: 1px solid rgba(201, 184, 232, 0.25);
+      border-radius: 20px;
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 16px;
+      backdrop-filter: blur(20px);
+      animation: fadeUp 0.4s ease both;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .intro-card::after {
+      content: '';
+      position: absolute;
+      top: -30px;
+      right: -30px;
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(201, 184, 232, 0.15), transparent 70%);
+      pointer-events: none;
+    }
+
+    .intro-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--lavender), var(--rose));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+      flex-shrink: 0;
+    }
+
+    .intro-text {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.6);
+      line-height: 1.5;
+      font-weight: 300;
+    }
+
+    /* ── Filter Chips ── */
+    .filter-row {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 0 0 14px;
+      margin-bottom: 4px;
+      scrollbar-width: none;
+      animation: fadeUp 0.4s 0.06s ease both;
+    }
+
+    .filter-row::-webkit-scrollbar {
+      display: none;
+    }
+
+    .chip {
+      flex-shrink: 0;
+      padding: 9px 18px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.55);
+      background: var(--card);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      white-space: nowrap;
+    }
+
+    .chip:active {
+      transform: scale(0.95);
+    }
+
+    .chip.active {
+      background: rgba(201, 184, 232, 0.25);
+      border-color: rgba(201, 184, 232, 0.4);
+      color: var(--lavender);
+    }
+
+    /* ── Top Picks Section ── */
+    .top-picks-section {
+      margin-bottom: 16px;
+      animation: fadeUp 0.4s 0.1s ease both;
+    }
+
+    .section-label {
+      font-size: 10px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--lavender);
+      opacity: 0.7;
+      margin-bottom: 6px;
+    }
+
+    .section-subtitle {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.35);
+      margin-bottom: 12px;
+    }
+
+    /* ── Intervention Cards ── */
+    .card-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .intervention-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 18px 18px 16px;
+      cursor: pointer;
+      backdrop-filter: blur(20px);
+      transition: transform 0.15s, opacity 0.15s;
+      position: relative;
+      overflow: hidden;
+      animation: fadeUp 0.35s ease both;
+    }
+
+    .intervention-card:active {
+      transform: scale(0.97);
+      opacity: 0.85;
+    }
+
+    .card-top {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      margin-bottom: 10px;
+    }
+
+    .card-emoji {
+      font-size: 28px;
+      line-height: 1;
+      flex-shrink: 0;
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 14px;
+    }
+
+    .card-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .card-name {
+      font-size: 16px;
+      font-weight: 500;
+      color: white;
+      margin-bottom: 4px;
+      line-height: 1.2;
+    }
+
+    .card-desc {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.45);
+      line-height: 1.45;
+    }
+
+    .card-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 7px;
+      margin-top: 10px;
+    }
+
+    .duration-badge {
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 4px 10px;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .best-for-pill {
+      background: rgba(232, 165, 176, 0.12);
+      border: 1px solid rgba(232, 165, 176, 0.2);
+      border-radius: 12px;
+      padding: 4px 10px;
+      font-size: 11px;
+      color: var(--blush);
+    }
+
+    .effective-badge {
+      background: rgba(201, 184, 232, 0.18);
+      border: 1px solid rgba(201, 184, 232, 0.3);
+      border-radius: 12px;
+      padding: 4px 10px;
+      font-size: 11px;
+      color: var(--lavender);
+      font-weight: 400;
+    }
+
+    /* ── Star Rating ── */
+    .star-rating {
+      display: flex;
+      gap: 2px;
+      margin-top: 8px;
+    }
+
+    .star {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.15);
+    }
+
+    .star.filled {
+      color: var(--rose);
+    }
+
+    /* ── Try It Button ── */
+    .try-btn {
+      margin-top: 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 18px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(201, 184, 232, 0.2), rgba(232, 165, 176, 0.15));
+      border: 1px solid rgba(201, 184, 232, 0.25);
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--lavender);
+      cursor: pointer;
+      min-height: 44px;
+      transition: transform 0.15s;
+    }
+
+    .try-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* ── Empty State ── */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      animation: fadeUp 0.4s ease both;
+    }
+
+    .empty-icon {
+      font-size: 40px;
+      margin-bottom: 16px;
+      opacity: 0.4;
+    }
+
+    .empty-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 24px;
+      font-weight: 300;
+      font-style: italic;
+      color: white;
+      margin-bottom: 8px;
+    }
+
+    .empty-sub {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.4);
+      line-height: 1.5;
+    }
+
+    /* ── Error State ── */
+    .error-state {
+      text-align: center;
+      padding: 60px 20px;
+      animation: fadeUp 0.4s ease both;
+    }
+
+    .error-icon {
+      font-size: 36px;
+      margin-bottom: 14px;
+      opacity: 0.5;
+    }
+
+    .error-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px;
+      font-weight: 300;
+      font-style: italic;
+      color: white;
+      margin-bottom: 8px;
+    }
+
+    .error-sub {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.4);
+      line-height: 1.5;
+      margin-bottom: 20px;
+    }
+
+    .retry-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 24px;
+      border-radius: 20px;
+      background: rgba(201, 184, 232, 0.18);
+      border: 1px solid rgba(201, 184, 232, 0.3);
+      font-size: 13px;
+      color: var(--lavender);
+      cursor: pointer;
+      min-height: 44px;
+      transition: transform 0.15s;
+    }
+
+    .retry-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* ── Section divider ── */
+    .section-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 18px 0 14px;
+    }
+
+    /* ── Animations ── */
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(14px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Loading Screen -->
+  <div class="loading-screen" id="loadingScreen">
+    <div class="loading-avatar">✦</div>
+    <div class="loading-text">Loading your toolkit</div>
+  </div>
+
+  <div class="page-wrapper">
+    <!-- Header -->
+    <div class="header">
+      <div class="back-btn" onclick="navigate('home')">←</div>
+      <div class="header-title">Your Toolkit</div>
+    </div>
+
+    <!-- Scrollable Content -->
+    <div class="container" id="container">
+      <!-- Intro card (static) -->
+      <div class="intro-card" id="introCard" style="display:none;">
+        <div class="intro-icon">✦</div>
+        <div class="intro-text">These tools are recommended based on what works for you</div>
+      </div>
+
+      <!-- Filter chips (static) -->
+      <div class="filter-row" id="filterRow" style="display:none;"></div>
+
+      <!-- Cards area (re-rendered on filter change) -->
+      <div id="cardsArea"></div>
+    </div>
+  </div>
+
+  <script>
+    var BACKEND = 'https://kira-backend-lcwr.onrender.com';
+    var USER_ID = new URLSearchParams(window.location.search).get('user') || 'user_1';
+    var allInterventions = [];
+    var activeFilter = 'all';
+
+    var categoryNav = {
+      breathing: 'breathing',
+      urge_surfing: 'urge_surf',
+      haptic: 'haptic',
+      grounding: 'grounding',
+      journaling: 'journal'
+    };
+
+    var categoryLabels = {
+      all: 'All',
+      breathing: 'Breathing',
+      urge_surfing: 'Urge Surfing',
+      haptic: 'Haptic',
+      grounding: 'Grounding',
+      journaling: 'Journaling'
+    };
+
+    // Navigation
+    var navigating = false;
+    function navigate(screen) {
+      if (navigating) return;
+      navigating = true;
+      try {
+        window.AppInventor.setWebViewString('navigate:' + screen);
+      } catch (e) {
+        navigating = false;
+      }
+    }
+
+    // Fetch data
+    function fetchLibrary() {
+      fetch(BACKEND + '/intervention_library?user_id=' + USER_ID)
+        .then(function (res) {
+          if (!res.ok) throw new Error('Network error');
+          return res.json();
+        })
+        .then(function (data) {
+          allInterventions = [];
+          var categories = Object.keys(data);
+          for (var i = 0; i < categories.length; i++) {
+            var cat = categories[i];
+            var items = data[cat];
+            if (Array.isArray(items)) {
+              for (var j = 0; j < items.length; j++) {
+                items[j]._category = cat;
+                allInterventions.push(items[j]);
+              }
+            }
+          }
+          hideLoading();
+          renderFilters();
+          render();
+        })
+        .catch(function () {
+          hideLoading();
+          showError();
+        });
+    }
+
+    function hideLoading() {
+      var el = document.getElementById('loadingScreen');
+      el.classList.add('hidden');
+      setTimeout(function () { el.style.display = 'none'; }, 500);
+    }
+
+    function showError() {
+      var container = document.getElementById('container');
+      container.innerHTML =
+        '<div class="error-state">' +
+          '<div class="error-icon">✦</div>' +
+          '<div class="error-title">Something went wrong</div>' +
+          '<div class="error-sub">We couldn\'t load your toolkit right now.<br>Please check your connection and try again.</div>' +
+          '<button class="retry-btn" onclick="retryFetch()">Try again</button>' +
+        '</div>';
+    }
+
+    function retryFetch() {
+      var container = document.getElementById('container');
+      container.innerHTML = '';
+      var ls = document.getElementById('loadingScreen');
+      ls.style.display = 'flex';
+      ls.classList.remove('hidden');
+      fetchLibrary();
+    }
+
+    // Build static filter chips once
+    function renderFilters() {
+      var filterRow = document.getElementById('filterRow');
+      var filterKeys = ['all', 'breathing', 'urge_surfing', 'haptic', 'grounding', 'journaling'];
+      var html = '';
+      for (var i = 0; i < filterKeys.length; i++) {
+        var key = filterKeys[i];
+        var isActive = activeFilter === key ? ' active' : '';
+        html += '<div class="chip' + isActive + '" data-filter="' + key + '" onclick="setFilter(\'' + key + '\')">' + categoryLabels[key] + '</div>';
+      }
+      filterRow.innerHTML = html;
+      filterRow.style.display = '';
+      document.getElementById('introCard').style.display = '';
+    }
+
+    // Update just the active chip highlight (no re-render)
+    function updateChipHighlight() {
+      var chips = document.getElementById('filterRow').querySelectorAll('.chip');
+      for (var i = 0; i < chips.length; i++) {
+        if (chips[i].getAttribute('data-filter') === activeFilter) {
+          chips[i].classList.add('active');
+        } else {
+          chips[i].classList.remove('active');
+        }
+      }
+    }
+
+    // Sort: effective first, then rated, then unrated
+    function sortInterventions(list) {
+      return list.slice().sort(function (a, b) {
+        // Effective items first
+        if (a.effective && !b.effective) return -1;
+        if (!a.effective && b.effective) return 1;
+        // Then by rating (highest first)
+        var ra = (a.user_rating !== null && a.user_rating !== undefined) ? a.user_rating : -1;
+        var rb = (b.user_rating !== null && b.user_rating !== undefined) ? b.user_rating : -1;
+        return rb - ra;
+      });
+    }
+
+    // Render only the cards area
+    function render() {
+      var cardsArea = document.getElementById('cardsArea');
+      var html = '';
+
+      // Filter interventions
+      var filtered = activeFilter === 'all'
+        ? allInterventions
+        : allInterventions.filter(function (item) { return item._category === activeFilter; });
+
+      // Sort: effective/rated items first
+      filtered = sortInterventions(filtered);
+
+      // Empty state
+      if (allInterventions.length === 0) {
+        html +=
+          '<div class="empty-state">' +
+            '<div class="empty-icon">✦</div>' +
+            '<div class="empty-title">Start exploring</div>' +
+            '<div class="empty-sub">Kira will learn what works for you</div>' +
+          '</div>';
+        cardsArea.innerHTML = html;
+        return;
+      }
+
+      // All / filtered cards
+      if (filtered.length === 0) {
+        html +=
+          '<div class="empty-state">' +
+            '<div class="empty-icon">✦</div>' +
+            '<div class="empty-title">Nothing here yet</div>' +
+            '<div class="empty-sub">No interventions in this category</div>' +
+          '</div>';
+      } else {
+        html += '<div class="card-list">';
+        for (var c = 0; c < filtered.length; c++) {
+          html += buildCard(filtered[c], c * 0.04);
+        }
+        html += '</div>';
+      }
+
+      cardsArea.innerHTML = html;
+    }
+
+    function buildCard(item, delay) {
+      var navTarget = categoryNav[item._category] || 'home';
+      var delayStyle = delay ? ' style="animation-delay:' + delay.toFixed(2) + 's"' : '';
+
+      var html = '<div class="intervention-card"' + delayStyle + ' onclick="navigate(\'' + navTarget + '\')">';
+
+      // Top row: emoji + name + description
+      html += '<div class="card-top">';
+      html += '<div class="card-emoji">' + (item.icon || '✦') + '</div>';
+      html += '<div class="card-info">';
+      html += '<div class="card-name">' + escapeHtml(item.name) + '</div>';
+      html += '<div class="card-desc">' + escapeHtml(item.description || '') + '</div>';
+      html += '</div>';
+      html += '</div>';
+
+      // Meta row: duration + best_for pills
+      html += '<div class="card-meta">';
+      if (item.duration) {
+        html += '<span class="duration-badge">' + escapeHtml(item.duration) + '</span>';
+      }
+      if (item.best_for && item.best_for.length > 0) {
+        for (var b = 0; b < item.best_for.length; b++) {
+          html += '<span class="best-for-pill">' + escapeHtml(item.best_for[b]) + '</span>';
+        }
+      }
+      if (item.effective) {
+        html += '<span class="effective-badge">Works for you ✦</span>';
+      }
+      html += '</div>';
+
+      // Star rating
+      if (item.user_rating !== null && item.user_rating !== undefined) {
+        html += '<div class="star-rating">';
+        for (var s = 1; s <= 5; s++) {
+          var cls = s <= item.user_rating ? 'star filled' : 'star';
+          html += '<span class="' + cls + '">★</span>';
+        }
+        html += '</div>';
+      }
+
+      // Try it button for unused interventions
+      if (item.times_used === 0) {
+        html += '<div class="try-btn" onclick="event.stopPropagation();navigate(\'' + navTarget + '\')">Try it →</div>';
+      }
+
+      html += '</div>';
+      return html;
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function setFilter(key) {
+      activeFilter = key;
+      updateChipHighlight();
+      render();
+    }
+
+    // Init
+    fetchLibrary();
+  </script>
+</body>
+
+</html>

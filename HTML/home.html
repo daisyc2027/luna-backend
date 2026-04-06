@@ -65,11 +65,13 @@
       height: 100dvh;
       position: relative;
       z-index: 1;
+      overflow: hidden;
     }
 
     .container {
       flex: 1;
       overflow-y: auto;
+      overflow-x: hidden;
       -webkit-overflow-scrolling: touch;
       padding: 0 20px 20px;
       max-width: 420px;
@@ -442,6 +444,20 @@
       filter: drop-shadow(0 0 5px rgba(232, 165, 176, 0.5));
     }
 
+    .settings-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .settings-btn:active { opacity: 0.6; }
+
     /* ── Animations ── */
     @keyframes fadeUp {
       from {
@@ -480,7 +496,12 @@
           <div class="greeting" id="greetingText">Good morning</div>
           <div class="app-name">Kira</div>
         </div>
-        <div class="date-badge" id="dateDisplay">—</div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="date-badge" id="dateDisplay">—</div>
+          <div class="settings-btn" onclick="navigate('settings')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </div>
+        </div>
       </div>
 
       <!-- Kira Chat Card (top) -->
@@ -499,16 +520,11 @@
       <!-- Phase Card -->
       <div class="phase-card">
         <div class="section-label">Current Phase</div>
-        <div class="phase-name" id="phaseName">Luteal</div>
-        <div class="phase-meta" id="phaseMeta">Day 24 · 4 days until next period</div>
+        <div class="phase-name" id="phaseName">Loading...</div>
+        <div class="phase-meta" id="phaseMeta">—</div>
         <div class="divider"></div>
-        <div class="tendencies-label">Today you may feel</div>
-        <div class="pills" id="tendencyPills">
-          <span class="pill warm">Higher sensitivity</span>
-          <span class="pill warm">Craving intensity</span>
-          <span class="pill cool">Lower energy</span>
-          <span class="pill">Introspective</span>
-        </div>
+        <div class="tendencies-label" id="tendenciesLabel">Today you may feel</div>
+        <div class="pills" id="tendencyPills"></div>
       </div>
 
       <!-- Mood Check-in -->
@@ -533,11 +549,6 @@
           <div class="grid-title">Nutrition</div>
           <div class="grid-sub">Track cravings & meals</div>
         </div>
-        <div class="grid-card micro-interventions" onclick="navigate('micro')">
-          <span class="grid-icon">🌿</span>
-          <div class="grid-title">Nutrition</div>
-          <div class="grid-sub">Track cravings & meals</div>
-        </div>
 
       </div>
 
@@ -546,65 +557,107 @@
   </div>
 
   <script>
+    var BACKEND = 'https://kira-backend-lcwr.onrender.com';
+    var USER_ID = new URLSearchParams(window.location.search).get('user') || 'user_1';
+
     // Greeting based on time
-    const hour = new Date().getHours();
-    const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+    var hour = new Date().getHours();
+    var greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
     document.getElementById('greetingText').textContent = greeting;
 
     // Date display
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    var now = new Date();
+    var dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     document.getElementById('dateDisplay').textContent = dateStr;
 
-    // Phase tendencies
-    const phaseTendencies = {
-      menstrual: [
-        { text: 'Low energy', type: 'warm' },
-        { text: 'Introspective', type: 'cool' },
-        { text: 'Rest needed', type: '' },
-        { text: 'High sensitivity', type: 'warm' }
-      ],
-      follicular: [
-        { text: 'Rising energy', type: 'cool' },
-        { text: 'Creative clarity', type: 'cool' },
-        { text: 'Motivated', type: '' },
-        { text: 'Social openness', type: '' }
-      ],
-      ovulatory: [
-        { text: 'Peak confidence', type: 'cool' },
-        { text: 'High energy', type: 'cool' },
-        { text: 'Communicative', type: '' },
-        { text: 'Assertive', type: '' }
-      ],
-      luteal: [
-        { text: 'Higher sensitivity', type: 'warm' },
-        { text: 'Craving intensity', type: 'warm' },
-        { text: 'Lower energy', type: 'cool' },
-        { text: 'Introspective', type: '' }
-      ]
+    // Default phase tendencies (fallback)
+    var defaultTendencies = {
+      menstrual: ['Low energy', 'Introspective', 'Rest needed', 'High sensitivity'],
+      follicular: ['Rising energy', 'Creative clarity', 'Motivated', 'Social openness'],
+      ovulatory: ['Peak confidence', 'High energy', 'Communicative', 'Assertive'],
+      luteal: ['Higher sensitivity', 'Craving intensity', 'Lower energy', 'Introspective']
     };
 
-    // Called from App Inventor to update phase data
+    // Tendency pill type mapping
+    var warmWords = ['sensitivity', 'craving', 'low energy', 'rest', 'tired', 'irritab'];
+    var coolWords = ['energy', 'creative', 'confidence', 'motivated', 'introspective', 'communicat'];
+
+    function getPillType(text) {
+      var lower = text.toLowerCase();
+      for (var i = 0; i < warmWords.length; i++) {
+        if (lower.indexOf(warmWords[i]) !== -1) return 'warm';
+      }
+      for (var i = 0; i < coolWords.length; i++) {
+        if (lower.indexOf(coolWords[i]) !== -1) return 'cool';
+      }
+      return '';
+    }
+
+    function renderTendencies(tendencies) {
+      document.getElementById('tendencyPills').innerHTML = tendencies.map(function(t) {
+        return '<span class="pill ' + getPillType(t) + '">' + t + '</span>';
+      }).join('');
+    }
+
+    // Fetch user data + cycle info
+    function loadHomeData() {
+      fetch(BACKEND + '/home_data?user_id=' + USER_ID)
+        .then(function(res) {
+          if (!res.ok) throw new Error('Failed');
+          return res.json();
+        })
+        .then(function(data) {
+          // Update greeting with name
+          if (data.name) {
+            document.getElementById('greetingText').textContent = greeting + ', ' + data.name;
+          }
+
+          // Update phase card
+          var phase = data.phase || 'luteal';
+          document.getElementById('phaseName').textContent =
+            phase.charAt(0).toUpperCase() + phase.slice(1);
+          document.getElementById('phaseMeta').textContent =
+            'Day ' + (data.cycle_day || '—') + ' \u00b7 ' + (data.next_period_in_days || '—') + ' days until next period';
+
+          // Update tendencies
+          var tendencies = data.tendencies || defaultTendencies[phase] || [];
+          renderTendencies(tendencies);
+
+          // Show personalisation note
+          if (data.personalised) {
+            document.getElementById('tendenciesLabel').textContent = 'Based on your data';
+          } else {
+            document.getElementById('tendenciesLabel').textContent = 'Today you may feel';
+          }
+        })
+        .catch(function() {
+          // Fallback to defaults
+          document.getElementById('phaseName').textContent = 'Welcome';
+          document.getElementById('phaseMeta').textContent = 'Log your period to see your cycle';
+          renderTendencies(defaultTendencies.follicular);
+        });
+    }
+
+    // Also keep updatePhase for App Inventor to call directly if needed
     function updatePhase(phase, cycleDay, nextPeriodDays) {
       document.getElementById('phaseName').textContent =
         phase.charAt(0).toUpperCase() + phase.slice(1);
       document.getElementById('phaseMeta').textContent =
         'Day ' + cycleDay + ' \u00b7 ' + nextPeriodDays + ' days until next period';
-
-      const pills = phaseTendencies[phase] || phaseTendencies.luteal;
-      document.getElementById('tendencyPills').innerHTML = pills.map(function (p) {
-        return '<span class="pill ' + p.type + '">' + p.text + '</span>';
-      }).join('');
+      renderTendencies(defaultTendencies[phase] || defaultTendencies.luteal);
     }
 
-    // Navigation signals to App Inventor
-    let navigating = false;
-
+    // Navigation
+    var navigating = false;
     function navigate(screen) {
       if (navigating) return;
       navigating = true;
       window.AppInventor.setWebViewString('navigate:' + screen);
-    }  </script>
+    }
+
+    // Load on init
+    loadHomeData();
+  </script>
 </body>
 
 </html>

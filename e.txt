@@ -1,0 +1,271 @@
+Build the following files and Flask endpoint updates for a women's wellness app called Kira. Do NOT rebuild breathing.html, chat.html, home.html, or onboarding.html — those already exist.
+
+## Design System (match exactly across all files)
+- Background: #2d1f35, Cards: rgba(255,255,255,0.09), Border: rgba(255,255,255,0.14)
+- Colors: --rose: #e8a5b0, --blush: #f2c4ce, --lavender: #c9b8e8
+- Fonts: Cormorant Garamond (italic headings) + DM Sans (body) from Google Fonts
+- Ambient blobs: lavender top-left, rose bottom-right, position fixed
+- Layout: position:fixed body, flex column page-wrapper at 100dvh, scrollable middle
+- Navigation: window.AppInventor.setWebViewString('navigate:X')
+- Loading: pulsing ✦ avatar fades out when ready
+- Backend URL: https://kira-backend-lcwr.onrender.com
+
+## Firebase Structure (already exists)
+users/user_1: name, age, last_period_date, average_cycle_length, period_dates[], current_moods[], effective_interventions[], onboarding_complete
+emotion_logs: date, emotion, user_text, phase, cycle_day, intervention, rating
+sleep_logs: date, hours, quality, phase, cycle_day
+diet_logs: date, craving, ate, phase, cycle_day
+intervention_logs: date, intervention_type, intervention_name, phase, cycle_day, rating, duration_seconds
+
+## PART 1 — Flask endpoint updates (add to existing app.py)
+
+### Update /home_data endpoint
+The phase tendencies shown on home screen should be personalised after enough data is collected. Logic:
+- If user has fewer than 14 emotion_logs: use default phase tendencies
+- If user has 14+ emotion_logs: query emotion_logs filtered by current phase, find top 3 most frequent emotions, use those as personalised tendencies with a note "Based on your patterns"
+- Same logic for sleep: if sleep_logs exist for current phase, show their actual average hours vs phase average
+- Same logic for diet: if diet_logs exist, show their most common cravings for current phase
+- Pass a "personalised": true/false flag in the response so the frontend can show "Based on your data" vs "Typical for this phase"
+
+### New endpoint: GET /intervention_library
+Returns all available interventions organised by category:
+```json
+{
+  "breathing": [
+    {"id": "box_breathing", "name": "Box Breathing", "description": "4-4-4-4 breath pattern to calm your nervous system", "duration": "4 min", "best_for": ["anxiety", "stress", "overwhelmed"], "icon": "🌬️"}
+  ],
+  "urge_surfing": [
+    {"id": "urge_surf_5", "name": "5-Minute Urge Surf", "description": "Ride the wave of a craving without acting on it", "duration": "5 min", "best_for": ["craving", "irritability"], "icon": "🌊"},
+    {"id": "urge_surf_15", "name": "Deep Urge Surf", "description": "Extended craving timer with mindfulness prompts", "duration": "15 min", "best_for": ["craving"], "icon": "🌊"}
+  ],
+  "haptic": [
+    {"id": "haptic_calm", "name": "Calm Reset", "description": "Rhythmic vibration pattern to ground your nervous system", "duration": "2 min", "best_for": ["anxiety", "stress", "overwhelmed"], "icon": "📳"},
+    {"id": "haptic_energise", "name": "Energy Pulse", "description": "Gentle tapping pattern to lift low mood and energy", "duration": "2 min", "best_for": ["low_motivation", "tired"], "icon": "⚡"}
+  ],
+  "grounding": [
+    {"id": "54321", "name": "5-4-3-2-1 Grounding", "description": "Use your senses to anchor yourself to the present moment", "duration": "3 min", "best_for": ["anxiety", "rumination", "overwhelmed"], "icon": "🌿"},
+    {"id": "body_scan", "name": "Body Scan", "description": "A gentle scan from head to toe to release physical tension", "duration": "5 min", "best_for": ["stress", "anxiety", "low_motivation"], "icon": "✨"}
+  ],
+  "cognitive": [
+    {"id": "self_compassion", "name": "Self-Compassion Script", "description": "A guided script to soften self-criticism during difficult moments", "duration": "3 min", "best_for": ["shame", "rumination", "irritability"], "icon": "💜"},
+    {"id": "cognitive_defusion", "name": "Thought Defusion", "description": "Create distance from unhelpful thoughts so they lose their grip", "duration": "4 min", "best_for": ["rumination", "anxiety", "shame"], "icon": "🔮"},
+    {"id": "delay_decide", "name": "Delay and Decide", "description": "Pause before acting on an urge or emotion with a structured prompt", "duration": "2 min", "best_for": ["craving", "irritability"], "icon": "⏸️"}
+  ],
+  "journaling": [
+    {"id": "phase_reflect", "name": "Phase Reflection", "description": "Short guided journaling prompts tailored to your current cycle phase", "duration": "5 min", "best_for": ["low_motivation", "rumination", "social_sensitivity"], "icon": "📓"},
+    {"id": "gratitude_micro", "name": "Micro Gratitude", "description": "Three small things that went okay today — rewires negativity bias", "duration": "2 min", "best_for": ["low_motivation", "shame", "rumination"], "icon": "🌸"}
+  ]
+}
+```
+
+Also return user's ratings for each intervention (from intervention_logs in Firebase) so the frontend can show stars.
+
+### New endpoint: POST /rate_intervention (update existing)
+Body: {intervention_id, intervention_name, intervention_type, rating, phase, cycle_day, duration_seconds}
+- Save full log to intervention_logs collection in Firebase
+- If rating >= 4, add to user's effective_interventions array
+- If rating <= 2, note as ineffective (track separately as ineffective_interventions)
+- Return {"status": "ok", "message": "Thanks for rating — Kira will remember this"}
+
+### New endpoint: GET /personalised_intervention
+Query params: ?emotion=anxiety&phase=luteal
+- Fetches user's intervention_logs from Firebase
+- Finds interventions rated >= 4 that match the emotion
+- If found: returns those first (personalised recommendations)
+- If not enough data: falls back to default matching by best_for array
+- Returns ordered list of up to 3 recommended interventions with explanation: "Based on what's helped you before" vs "Popular for this phase"
+
+## PART 2 — New HTML files to build
+
+### cycle.html
+Monthly cycle calendar + period tracking screen.
+
+On load: fetch GET /cycle_status
+
+Sections:
+1. Header with back button (navigate:home) and "Your Cycle" title in italic serif
+2. Loading screen (pulsing ✦) while fetching
+3. Month navigation: previous/next month arrows with current month/year
+4. Weekly day labels: S M T W T F S
+5. Calendar grid: 
+   - Each day is a tappable circle
+   - Colour coded by predicted cycle phase for that day:
+     Menstrual days 1-5: rgba(232,165,176,0.3) rose tint
+     Follicular days 6-13: rgba(201,184,232,0.2) lavender tint
+     Ovulatory days 14-16: rgba(201,184,232,0.5) bright lavender
+     Luteal days 17+: rgba(176,154,181,0.25) warm purple
+   - Today: white glowing ring border
+   - Predicted next period start: small rose dot below day number
+   - PMS window (5 days before period): subtle warning indicator ⚠️
+   - Past days: reduced opacity 0.5
+   - If user has if personalised data (14+ logs): show a small 📊 icon on days where their personal pattern differs from default
+6. Tapping a day opens a bottom sheet (slides up, backdrop blur):
+   - Date and phase name
+   - Default tendencies for that phase
+   - If personalised data exists for that phase: show "Your pattern: [personalised tendencies]" with a sparkle ✦ indicator
+   - Energy level: low/medium/high with colour indicator
+   - Close button
+7. Current phase summary card: phase name large italic, cycle day, next period countdown, phase description
+8. Next 7 days forecast: horizontal scrollable pill strip showing phase colour + day number
+9. "My period arrived today" button: 
+   - Rose gradient button
+   - On tap: show confirmation dialog "Mark today as period start?"
+   - On confirm: POST /report_period with today's date
+   - Show success toast: "Period logged ✓ Kira will update your predictions"
+10. Cycle stats card: cycles tracked, average cycle length, longest/shortest cycle
+
+Personalisation logic in frontend:
+- If response includes personalised: true flag, show "Based on your data" badge on tendency pills
+- Otherwise show "Typical for this phase" in muted text
+
+### interventions.html  
+Intervention library — a place users can browse and launch all available strategies.
+
+On load: fetch GET /intervention_library
+
+Sections:
+1. Header with back button (navigate:home), title "Your Toolkit" in italic serif
+2. Loading screen while fetching
+3. Intro card: "These tools are recommended based on what works for you" with ✦ icon
+4. Filter chips row (horizontal scroll): All · Breathing · Urge Surfing · Grounding · Cognitive · Journaling · Haptic
+   - Tapping a chip filters the list below
+   - Active chip: lavender background
+5. For each intervention category, show intervention cards:
+   - Card: emoji icon, name in medium weight, description, duration badge, "best for" tags
+   - If user has rated it: show star rating (filled stars in rose colour)
+   - If it's in their effective_interventions: show "Works for you ✦" badge in lavender
+   - If never tried: show "Try it" button
+   - Tapping card: navigates to the relevant screen (navigate:breathing, navigate:urge_surf, navigate:haptic, navigate:grounding, navigate:journal)
+6. "Most effective for you" section at top (only shown if user has 3+ ratings):
+   - Shows top 2 interventions based on their ratings
+   - Personalised message: "Based on X ratings, these work best for you"
+7. Empty state if no data yet: "Start exploring — Kira will learn what works for you"
+
+### urge_surf.html
+Urge surfing timer — helps user ride out a craving without acting on it.
+
+Visual design: same dark purple theme, ocean/wave aesthetic within the color palette.
+
+Sections:
+1. Header: exit button (✕) top right with confirm dialog, title "Urge Surfing" 
+2. Brief explanation card: "Cravings peak and pass like waves. This timer helps you ride it out without acting on it. Most cravings pass within 15 minutes."
+3. Wave animation: an animated SVG wave that rises and falls, representing the craving intensity curve
+   - Starts low, peaks around 7-8 minutes, falls back down
+   - Smooth CSS animation
+   - Color: lavender to rose gradient on the wave
+4. Timer display: large countdown in Cormorant Garamond, shows MM:SS
+   - Default: 15 minutes
+   - Option to set 5 or 15 minutes before starting
+5. Craving intensity check-in: at 5 min and 10 min marks, a gentle prompt appears "How intense is the craving now?" with a 1-5 scale (tap to answer, dismisses automatically after 10 seconds)
+6. Mindfulness prompts that rotate every 2 minutes:
+   - "Notice the craving without judging it"
+   - "You are not your craving — you are the one watching it"
+   - "This feeling is temporary. It will pass."
+   - "What does the craving feel like in your body right now?"
+   - "You have surfed this wave before"
+7. Completion screen: "You did it. The wave passed." with a celebration animation, then rating prompt
+8. Rating prompt after completion: "Did urge surfing help?" 1-5 stars, POSTs to /rate_intervention
+9. Exit: window.location.href = 'https://done.exit'
+
+### haptic.html
+Haptic/vibration-based stress reset screen.
+
+Note: Web Vibration API (navigator.vibrate()) works on Android. On iOS it will show a visual simulation instead since iOS blocks web vibration.
+
+Sections:
+1. Header: exit button with confirm, title "Haptic Reset"
+2. Mode selector: two cards to choose from
+   - "Calm Reset 📳" — slow rhythmic pattern for anxiety/stress
+   - "Energy Pulse ⚡" — gentle energising pattern for low mood
+3. Selected mode description and instructions
+4. Central visual: a pulsing circle that animates in sync with the vibration pattern
+   - Calm: slow expand/contract at 0.5Hz, lavender color
+   - Energy: faster pulse at 1Hz, rose color
+5. Start button: begins vibration pattern + animation simultaneously
+   Calm pattern: vibrate([500, 300, 500, 300, 500]) repeated
+   Energy pattern: vibrate([200, 100, 200, 100, 200, 100, 200]) repeated
+6. iOS fallback: if navigator.vibrate is undefined, show message "Visual mode — follow the circle's rhythm with your breath" and animate only
+7. Duration: 2 minutes, countdown shown
+8. Completion + rating prompt, same as urge_surf
+9. Exit: window.location.href = 'https://done.exit'
+
+### grounding.html
+5-4-3-2-1 grounding exercise screen.
+
+Sections:
+1. Header: exit button, title "Grounding"
+2. Progress: 5 steps shown as a horizontal track (5 circles, fills as user completes each step)
+3. Each step is a full-screen card that slides in:
+   - Step 1 (5): Large "5" with "things you can SEE" — user types or mentally notes 5 things, tap each item to check it off as 5 tappable blank slots
+   - Step 2 (4): "4 things you can TOUCH" — same format
+   - Step 3 (3): "3 things you can HEAR"
+   - Step 4 (2): "2 things you can SMELL"  
+   - Step 5 (1): "1 thing you can TASTE"
+4. Each step: large number in Cormorant Garamond (80px), sense word, 5/4/3/2/1 tappable blank pills that fill with lavender when tapped
+5. Next button appears when all slots tapped for current step
+6. Completion: "You're grounded. Take a breath." with a gentle animation
+7. Rating prompt + exit
+
+### journal.html
+Phase-aware guided journaling screen.
+
+On load: fetch GET /cycle_status to get current phase, then display phase-appropriate prompts.
+
+Phase prompts:
+- Menstrual: ["What do I need to let go of?", "How can I be gentler with myself today?", "What does rest look like for me right now?"]
+- Follicular: ["What am I excited to create or start?", "Who do I want to connect with and why?", "What would I do if I knew I couldn't fail?"]
+- Ovulatory: ["What do I want to communicate that I've been holding back?", "What am I most confident about right now?", "How can I use my energy to help others today?"]
+- Luteal: ["What emotions am I carrying that haven't been acknowledged?", "What boundaries do I need to set?", "What is my inner critic saying — and what would a kind friend say instead?"]
+
+Sections:
+1. Header: exit, title "Reflect"
+2. Phase badge: "Prompts for your [phase] phase" 
+3. One prompt shown at a time, large italic Cormorant Garamond text
+4. Text area below: dark frosted glass input, placeholder "Write freely here..."
+5. Navigation: swipe or arrow to see next prompt (3 prompts per phase)
+6. Timer option: optional 5-minute writing timer shown as subtle countdown
+7. Save button: saves entry to Firebase journal_logs collection with phase and date
+8. Completion: affirming message tailored to phase
+9. Rating prompt
+
+## PART 3 — Update existing Flask endpoints
+
+### Update /chat system prompt
+Add this to the system prompt: "You have access to the user's historical patterns. When relevant, reference that Kira has noticed patterns: e.g. 'I've noticed you tend to feel more anxious in your luteal phase — is that what's happening now?' Use the intervention library to make specific suggestions by name, e.g. 'Want to try the 5-4-3-2-1 grounding exercise?' or 'The urge surfing timer might help with that craving.'"
+
+### Update get_user_summary() function
+After calculating patterns, also fetch intervention_logs and include:
+- most_effective_intervention (highest average rating)
+- least_effective_intervention (lowest average rating)  
+- total_interventions_tried (count of unique intervention_ids)
+- favourite_category (most used category)
+
+These get included in the summary passed to all AI prompts.
+
+## App Inventor additions needed
+- Add CycleScreen with WebViewer loading cycle.html
+- Add InterventionsScreen with WebViewer loading interventions.html  
+- Add UrgeSurfScreen with WebViewer loading urge_surf.html
+- Add HapticScreen with WebViewer loading haptic.html
+- Add GroundingScreen with WebViewer loading grounding.html
+- Add JournalScreen with WebViewer loading journal.html
+- All screens: BeforePageLoad catches done.exit → close screen
+- All WebViewStringChange events: navigate:X → open appropriate screen
+- Navigation from home: add to MainHome WebViewStringChange handler:
+  navigate:cycle → CycleScreen
+  navigate:interventions → InterventionsScreen
+  navigate:urge_surf → UrgeSurfScreen
+  navigate:haptic → HapticScreen
+  navigate:grounding → GroundingScreen
+  navigate:journal → JournalScreen
+
+## Key requirements across all files
+- Single self-contained HTML files, all CSS and JS inline
+- No external JS libraries, only Google Fonts
+- Smooth 60fps animations using CSS only
+- All interactive elements minimum 44px touch target
+- Error handling: if fetch fails show friendly message, never crash
+- Rating always uses POST /rate_intervention with full context
+- Personalisation flag: if user has 14+ logs in relevant collection, show "Based on your data" — otherwise show "Typical for this phase"
+- iOS compatibility: test navigator.vibrate availability before using
+- Android back gesture: handle gracefully

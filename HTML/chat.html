@@ -20,18 +20,18 @@
     html {
       height: 100%;
       overflow: hidden;
+      touch-action: none;
     }
 
     body {
       height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
       background: var(--deep);
       font-family: 'DM Sans', sans-serif;
       color: white;
-      overflow: hidden;
-      position: fixed;
-      width: 100%;
-      top: 0;
-      left: 0;
+      touch-action: none;
     }
 
     body::before {
@@ -102,13 +102,11 @@
       display: flex;
       flex-direction: column;
       width: 100%;
-      height: 100%;
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
+      height: 100vh;
+      height: 100dvh;
+      position: relative;
       z-index: 1;
+      overflow: hidden;
     }
 
     /* Header */
@@ -122,6 +120,7 @@
       display: flex;
       align-items: center;
       gap: 14px;
+      touch-action: none;
     }
 
     .back-btn {
@@ -192,6 +191,8 @@
       display: flex;
       flex-direction: column;
       gap: 4px;
+      touch-action: pan-y;
+      overscroll-behavior: contain;
     }
 
     /* Welcome */
@@ -370,6 +371,7 @@
       display: flex;
       align-items: flex-end;
       gap: 10px;
+      touch-action: none;
     }
 
     .input-box {
@@ -491,10 +493,22 @@
   </div>
 
   <script>
-    const BACKEND_URL = 'https://sunniest-monroe-reciprocative.ngrok-free.dev';
-    const CYCLE_PHASE = 'luteal';
-    const CYCLE_DAY = 24;
-    const STORAGE_KEY = 'kira_chat_history';
+    const BACKEND_URL = 'https://kira-backend-lcwr.onrender.com';
+    const USER_ID = new URLSearchParams(window.location.search).get('user') || 'user_1';
+    const STORAGE_KEY = 'kira_chat_' + USER_ID;
+    var CYCLE_PHASE = 'unknown';
+    var CYCLE_DAY = 0;
+
+    // Fetch cycle status for this user
+    fetch(BACKEND_URL + '/cycle_status?user_id=' + USER_ID)
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(d) {
+        if (d) {
+          CYCLE_PHASE = d.phase || 'unknown';
+          CYCLE_DAY = d.cycle_day || 0;
+        }
+      })
+      .catch(function() {});
 
     let isWaiting = false;
     let lastScrollTop = 0;
@@ -581,20 +595,50 @@
       document.getElementById('interventionBtn').style.display = 'none';
     }
 
+    // ── Prevent body scroll ──
+    // Only allow scrolling inside the chat area. Block everywhere else.
+    var chatAreaEl = document.getElementById('chatArea');
+
+    document.addEventListener('touchmove', function(e) {
+      var target = e.target;
+      while (target && target !== document.body && target !== document.documentElement) {
+        if (target === chatAreaEl) return; // allow chat scroll
+        target = target.parentNode;
+      }
+      e.preventDefault();
+    }, { passive: false });
+
     // ── Keyboard fix ──
     const inputBox = document.getElementById('messageInput');
+    const pageWrapper = document.querySelector('.page-wrapper');
+    var lastViewportHeight = window.innerHeight;
 
-    inputBox.addEventListener('focus', function() {
-      lastScrollTop = document.getElementById('chatArea').scrollTop;
-      setTimeout(function() {
-        document.getElementById('chatArea').scrollTop = lastScrollTop;
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', function() {
+        var newHeight = window.visualViewport.height;
+        pageWrapper.style.height = newHeight + 'px';
+        // Kill any body scroll that crept in
         window.scrollTo(0, 0);
         document.body.scrollTop = 0;
         document.documentElement.scrollTop = 0;
-      }, 300);
+        // Only scroll chat to bottom when keyboard is opening (viewport shrinking)
+        if (newHeight < lastViewportHeight) {
+          scrollToBottom();
+        }
+        lastViewportHeight = newHeight;
+      });
+
+      window.visualViewport.addEventListener('scroll', function() {
+        // Continuously prevent body from scrolling behind keyboard
+        window.scrollTo(0, 0);
+      });
+    }
+
+    inputBox.addEventListener('focus', function() {
       setTimeout(function() {
+        window.scrollTo(0, 0);
         scrollToBottom();
-      }, 500);
+      }, 300);
     });
 
     inputBox.addEventListener('blur', function() {
@@ -704,7 +748,8 @@
           body: JSON.stringify({
             message: text,
             phase: CYCLE_PHASE,
-            cycle_day: CYCLE_DAY
+            cycle_day: CYCLE_DAY,
+            user_id: USER_ID
           })
         });
 
@@ -717,10 +762,19 @@
           btn.style.display = 'block';
           if (data.intervention_trigger === 'BREATHING') {
             btn.textContent = '🌬️ Try a breathing exercise';
+            btn.dataset.target = 'breathing';
           } else if (data.intervention_trigger === 'URGE_SURF') {
             btn.textContent = '🌊 Try urge surfing';
+            btn.dataset.target = 'urge_surf';
           } else if (data.intervention_trigger === 'HAPTIC') {
             btn.textContent = '📳 Try a calming reset';
+            btn.dataset.target = 'haptic';
+          } else if (data.intervention_trigger === 'GROUNDING') {
+            btn.textContent = '🌿 Try a grounding exercise';
+            btn.dataset.target = 'grounding';
+          } else if (data.intervention_trigger === 'JOURNAL') {
+            btn.textContent = '📓 Try guided journaling';
+            btn.dataset.target = 'journal';
           }
           scrollToBottom();
         }
@@ -740,7 +794,9 @@
     }
 
     function openIntervention() {
-      window.AppInventor.setWebViewString('navigate:breathing');
+      var btn = document.getElementById('interventionBtn');
+      var target = btn.dataset.target || 'breathing';
+      window.AppInventor.setWebViewString('navigate:' + target);
     }
 
     // ── Init ──

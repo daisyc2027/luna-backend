@@ -11,7 +11,7 @@
       --blush: #f2c4ce;
       --lavender: #c9b8e8;
       --deep: #2d1f35;
-      --mid: #4a3558;
+      --card: rgba(255,255,255,0.09);
       --border: rgba(255,255,255,0.14);
     }
 
@@ -20,61 +20,81 @@
     html {
       height: 100%;
       overflow: hidden;
+      touch-action: none;
     }
 
     body {
       height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
       background: var(--deep);
       font-family: 'DM Sans', sans-serif;
       color: white;
-      overflow: hidden;
-      position: fixed;
-      width: 100%;
-      top: 0;
-      left: 0;
+      touch-action: none;
     }
 
     body::before {
       content: '';
       position: fixed;
-      top: -30%;
-      left: -20%;
-      width: 70%;
-      height: 70%;
+      top: -30%; left: -20%;
+      width: 70%; height: 70%;
       background: radial-gradient(circle, rgba(201,184,232,0.22) 0%, transparent 70%);
-      pointer-events: none;
-      z-index: 0;
+      pointer-events: none; z-index: 0;
     }
 
     body::after {
       content: '';
       position: fixed;
-      bottom: -20%;
-      right: -20%;
-      width: 60%;
-      height: 60%;
+      bottom: -20%; right: -20%;
+      width: 60%; height: 60%;
       background: radial-gradient(circle, rgba(232,165,176,0.18) 0%, transparent 70%);
-      pointer-events: none;
-      z-index: 0;
+      pointer-events: none; z-index: 0;
     }
 
-    /* ── Page wrapper ── */
     .page-wrapper {
       display: flex;
       flex-direction: column;
       width: 100%;
-      height: 100%;
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
+      height: 100vh;
+      height: 100dvh;
+      position: relative;
       z-index: 1;
+      overflow: hidden;
     }
 
-    /* ── Progress bar ── */
-    .progress-bar {
+    /* ── Top bar: back + progress ── */
+    .top-bar {
       flex-shrink: 0;
-      padding: 56px 28px 0;
+      padding: 52px 28px 0;
       display: flex;
-      gap: 6px;
+      align-items: center;
+      gap: 12px;
+      touch-action: none;
+    }
+
+    .back-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 16px;
+      color: var(--lavender);
+      flex-shrink: 0;
+      transition: opacity 0.15s;
+    }
+    .back-btn:active { opacity: 0.6; }
+    .back-btn.hidden { opacity: 0; pointer-events: none; }
+
+    .progress-bar {
+      flex: 1;
+      display: flex;
+      gap: 5px;
     }
 
     .progress-step {
@@ -84,7 +104,6 @@
       background: rgba(255,255,255,0.12);
       transition: background 0.4s ease;
     }
-
     .progress-step.active { background: var(--lavender); }
     .progress-step.done { background: rgba(201,184,232,0.4); }
 
@@ -93,6 +112,8 @@
       flex: 1;
       position: relative;
       overflow: hidden;
+      touch-action: pan-y;
+      overscroll-behavior: contain;
     }
 
     .step {
@@ -100,25 +121,29 @@
       top: 0; left: 0; right: 0; bottom: 0;
       display: flex;
       flex-direction: column;
-      padding: 48px 28px 0;
+      padding: 40px 28px 0;
       opacity: 0;
       transform: translateX(40px);
       transition: opacity 0.35s ease, transform 0.35s ease;
       pointer-events: none;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
     }
-
     .step.active {
       opacity: 1;
       transform: translateX(0);
       pointer-events: all;
     }
-
     .step.exiting {
       opacity: 0;
       transform: translateX(-40px);
     }
+    .step.entering-back {
+      transform: translateX(-40px);
+    }
 
-    /* Step content */
+    /* ── Step content ── */
     .step-label {
       font-size: 11px;
       letter-spacing: 3px;
@@ -130,7 +155,7 @@
 
     .step-title {
       font-family: 'Cormorant Garamond', serif;
-      font-size: 36px;
+      font-size: 34px;
       font-weight: 300;
       font-style: italic;
       color: white;
@@ -142,110 +167,10 @@
       font-size: 13px;
       color: rgba(255,255,255,0.4);
       line-height: 1.6;
-      margin-bottom: 36px;
+      margin-bottom: 32px;
     }
 
-    /* Input fields */
-    .field-input {
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.18);
-      border-radius: 16px;
-      padding: 16px 20px;
-      font-size: 18px;
-      font-family: 'DM Sans', sans-serif;
-      color: white;
-      outline: none;
-      width: 100%;
-      transition: border-color 0.2s;
-    }
-
-    .field-input::placeholder { color: rgba(255,255,255,0.25); }
-    .field-input:focus { border-color: rgba(201,184,232,0.5); }
-
-    /* Date input special styling */
-    input[type="date"] {
-      color-scheme: dark;
-    }
-
-    /* Number stepper */
-    .stepper {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.18);
-      border-radius: 16px;
-      padding: 12px 20px;
-      width: fit-content;
-    }
-
-    .stepper-btn {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.1);
-      border: 1px solid rgba(255,255,255,0.15);
-      color: white;
-      font-size: 20px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: opacity 0.15s;
-      font-family: 'DM Sans', sans-serif;
-    }
-
-    .stepper-btn:active { opacity: 0.6; }
-
-    .stepper-value {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 42px;
-      font-weight: 300;
-      color: white;
-      min-width: 60px;
-      text-align: center;
-    }
-
-    .stepper-unit {
-      font-size: 13px;
-      color: rgba(255,255,255,0.4);
-    }
-
-    /* Mood chips */
-    .mood-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
-    .mood-chip {
-      background: rgba(255,255,255,0.07);
-      border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 16px;
-      padding: 16px 18px;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .mood-chip:active { transform: scale(0.97); }
-
-    .mood-chip.selected {
-      background: rgba(201,184,232,0.2);
-      border-color: rgba(201,184,232,0.45);
-    }
-
-    .mood-emoji { font-size: 22px; }
-
-    .mood-label {
-      font-size: 14px;
-      color: rgba(255,255,255,0.8);
-      font-weight: 400;
-    }
-
-    /* Welcome step special */
+    /* ── Welcome step ── */
     .kira-hero {
       width: 80px;
       height: 80px;
@@ -259,73 +184,19 @@
       box-shadow: 0 8px 32px rgba(201,184,232,0.3);
       animation: heroFloat 3s ease-in-out infinite;
     }
-
     @keyframes heroFloat {
       0%, 100% { transform: translateY(0); }
       50% { transform: translateY(-8px); }
     }
 
-    /* Done step */
-    .done-animation {
+    .welcome-actions {
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      text-align: center;
-      padding-bottom: 60px;
+      gap: 12px;
+      margin-top: 12px;
     }
 
-    .done-circle {
-      width: 90px;
-      height: 90px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--lavender), var(--rose));
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 36px;
-      margin-bottom: 24px;
-      box-shadow: 0 8px 32px rgba(201,184,232,0.35);
-      animation: doneScale 0.5s ease both;
-    }
-
-    @keyframes doneScale {
-      from { transform: scale(0.5); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
-    }
-
-    .done-title {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 32px;
-      font-weight: 300;
-      font-style: italic;
-      color: white;
-      margin-bottom: 10px;
-    }
-
-    .done-sub {
-      font-size: 14px;
-      color: rgba(255,255,255,0.45);
-      line-height: 1.6;
-      max-width: 260px;
-    }
-
-    .personalising-text {
-      margin-top: 32px;
-      font-size: 13px;
-      color: var(--lavender);
-      opacity: 0.7;
-      letter-spacing: 1px;
-    }
-
-    /* ── Bottom area ── */
-    .bottom-area {
-      flex-shrink: 0;
-      padding: 20px 28px 44px;
-    }
-
-    .next-btn {
+    .btn-primary {
       width: 100%;
       padding: 17px;
       background: linear-gradient(135deg, var(--lavender), var(--rose));
@@ -339,37 +210,241 @@
       box-shadow: 0 6px 20px rgba(201,184,232,0.3);
       transition: transform 0.15s, opacity 0.15s;
       letter-spacing: 0.5px;
+      min-height: 52px;
     }
+    .btn-primary:active { transform: scale(0.98); opacity: 0.9; }
+    .btn-primary:disabled { opacity: 0.35; }
 
-    .next-btn:active { transform: scale(0.98); opacity: 0.9; }
-    .next-btn:disabled { opacity: 0.35; }
-
-    .skip-btn {
-      display: block;
-      text-align: center;
-      margin-top: 14px;
-      font-size: 13px;
-      color: rgba(255,255,255,0.3);
+    .btn-secondary {
+      width: 100%;
+      padding: 17px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 18px;
+      font-size: 16px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 400;
+      color: rgba(255,255,255,0.8);
       cursor: pointer;
-      padding: 4px;
+      transition: transform 0.15s;
+      letter-spacing: 0.5px;
+      min-height: 52px;
+    }
+    .btn-secondary:active { transform: scale(0.98); }
+
+    /* ── Input fields ── */
+    .field-input {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 16px;
+      padding: 16px 20px;
+      font-size: 17px;
+      font-family: 'DM Sans', sans-serif;
+      color: white;
+      outline: none;
+      width: 100%;
+      transition: border-color 0.2s;
+      min-height: 52px;
+    }
+    .field-input::placeholder { color: rgba(255,255,255,0.25); }
+    .field-input:focus { border-color: rgba(201,184,232,0.5); }
+
+    .field-group {
+      margin-bottom: 14px;
     }
 
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(12px); }
-      to { opacity: 1; transform: translateY(0); }
+    .field-label {
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+      margin-bottom: 8px;
+    }
+
+    .field-error {
+      font-size: 12px;
+      color: var(--rose);
+      margin-top: 8px;
+      min-height: 18px;
+      transition: opacity 0.2s;
+    }
+
+    .field-hint {
+      font-size: 11px;
+      color: rgba(255,255,255,0.3);
+      margin-top: 6px;
+    }
+
+    input[type="date"] { color-scheme: dark; }
+
+    /* ── Stepper ── */
+    .stepper {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 16px;
+      padding: 12px 20px;
+      width: fit-content;
+    }
+    .stepper-btn {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: white;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .stepper-btn:active { opacity: 0.6; }
+    .stepper-value {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 42px;
+      font-weight: 300;
+      min-width: 60px;
+      text-align: center;
+      background: none;
+      border: none;
+      color: white;
+      outline: none;
+      width: 70px;
+      padding: 0;
+      -moz-appearance: textfield;
+      appearance: textfield;
+    }
+    .stepper-value::-webkit-inner-spin-button,
+    .stepper-value::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      appearance: none;
+      margin: 0;
+    }
+    .stepper-unit { font-size: 13px; color: rgba(255,255,255,0.4); }
+
+    /* ── Mood chips ── */
+    .mood-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .mood-chip {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 16px;
+      padding: 16px 18px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-height: 52px;
+    }
+    .mood-chip:active { transform: scale(0.97); }
+    .mood-chip.selected {
+      background: rgba(201,184,232,0.2);
+      border-color: rgba(201,184,232,0.45);
+    }
+    .mood-emoji { font-size: 22px; }
+    .mood-label { font-size: 14px; color: rgba(255,255,255,0.8); }
+
+    /* ── Done step ── */
+    .done-animation {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      text-align: center;
+      padding-bottom: 60px;
+    }
+    .done-circle {
+      width: 90px; height: 90px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--lavender), var(--rose));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      margin-bottom: 24px;
+      box-shadow: 0 8px 32px rgba(201,184,232,0.35);
+      animation: doneScale 0.5s ease both;
+    }
+    @keyframes doneScale {
+      from { transform: scale(0.5); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .done-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 30px;
+      font-weight: 300;
+      font-style: italic;
+      margin-bottom: 10px;
+    }
+    .done-sub {
+      font-size: 14px;
+      color: rgba(255,255,255,0.45);
+      line-height: 1.6;
+      max-width: 260px;
+    }
+    .personalising-text {
+      margin-top: 32px;
+      font-size: 13px;
+      color: var(--lavender);
+      opacity: 0.7;
+      letter-spacing: 1px;
+    }
+
+    /* ── Bottom area ── */
+    .bottom-area {
+      flex-shrink: 0;
+      padding: 16px 28px 40px;
+      touch-action: none;
+    }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(255,255,255,0.12);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 20px;
+      font-size: 13px;
+      color: var(--rose);
+      opacity: 0;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      z-index: 50;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
     }
   </style>
 </head>
 <body>
-  <div class="page-wrapper">
+  <div class="page-wrapper" id="pageWrapper">
 
-    <!-- Progress bar -->
-    <div class="progress-bar" id="progressBar">
-      <div class="progress-step active" id="ps1"></div>
-      <div class="progress-step" id="ps2"></div>
-      <div class="progress-step" id="ps3"></div>
-      <div class="progress-step" id="ps4"></div>
-      <div class="progress-step" id="ps5"></div>
+    <!-- Top bar: back + progress -->
+    <div class="top-bar" id="topBar">
+      <div class="back-btn hidden" id="backBtn" onclick="prevStep()">&#8592;</div>
+      <div class="progress-bar" id="progressBar">
+        <div class="progress-step" id="ps1"></div>
+        <div class="progress-step" id="ps2"></div>
+        <div class="progress-step" id="ps3"></div>
+        <div class="progress-step" id="ps4"></div>
+        <div class="progress-step" id="ps5"></div>
+        <div class="progress-step" id="ps6"></div>
+        <div class="progress-step" id="ps7"></div>
+      </div>
     </div>
 
     <!-- Steps -->
@@ -377,110 +452,117 @@
 
       <!-- Step 1: Welcome -->
       <div class="step active" id="step1">
-        <div class="kira-hero">✦</div>
-        <div class="step-label">Welcome</div>
-        <div class="step-title">Meet Kira,<br>your wellness<br>companion</div>
-        <div class="step-sub">Kira learns your cycle and helps you navigate your emotions, energy, and wellbeing — personally.</div>
+        <div class="kira-hero">&#10022;</div>
+        <div class="step-title">Welcome to Kira</div>
+        <div class="step-sub">Your personal cycle companion. Kira learns your patterns and helps you navigate your emotions, energy, and wellbeing.</div>
+        <div class="welcome-actions">
+          <button class="btn-primary" onclick="goToSignup()">Create account</button>
+          <button class="btn-secondary" onclick="goToLogin()">I already have an account</button>
+        </div>
       </div>
 
-      <!-- Step 2: Name -->
+      <!-- Step 2: Signup -->
       <div class="step" id="step2">
+        <div class="step-label">Create account</div>
+        <div class="step-title">Choose a<br>username</div>
+        <div class="step-sub">This is how Kira will know you.</div>
+        <div class="field-group">
+          <div class="field-label">Username</div>
+          <input class="field-input" type="text" id="signupUsername" placeholder="e.g. luna_23" autocomplete="off" autocorrect="off" autocapitalize="off">
+          <div class="field-hint">3–20 characters, letters, numbers, underscores</div>
+          <div class="field-error" id="usernameError"></div>
+        </div>
+        <div class="field-group">
+          <div class="field-label">Password</div>
+          <input class="field-input" type="password" id="signupPassword" placeholder="At least 8 characters">
+          <div class="field-error" id="passwordError"></div>
+        </div>
+        <div class="field-group">
+          <div class="field-label">Confirm password</div>
+          <input class="field-input" type="password" id="signupConfirm" placeholder="Type it again">
+          <div class="field-error" id="confirmError"></div>
+        </div>
+      </div>
+
+      <!-- Step 2b: Login -->
+      <div class="step" id="step2b">
+        <div class="step-label">Welcome back</div>
+        <div class="step-title">Log in to<br>Kira</div>
+        <div class="step-sub">Pick up where you left off.</div>
+        <div class="field-group">
+          <div class="field-label">Username</div>
+          <input class="field-input" type="text" id="loginUsername" placeholder="Your username" autocomplete="off" autocorrect="off" autocapitalize="off">
+        </div>
+        <div class="field-group">
+          <div class="field-label">Password</div>
+          <input class="field-input" type="password" id="loginPassword" placeholder="Your password">
+          <div class="field-error" id="loginError"></div>
+        </div>
+      </div>
+
+      <!-- Step 3: Name -->
+      <div class="step" id="step3">
         <div class="step-label">Let's get personal</div>
         <div class="step-title">What's your<br>name?</div>
         <div class="step-sub">Kira will use this to personalise everything for you.</div>
-        <input
-          class="field-input"
-          type="text"
-          id="nameInput"
-          placeholder="Your first name"
-          autocomplete="off"
-          autocorrect="off"
-        >
+        <input class="field-input" type="text" id="nameInput" placeholder="Your first name" autocomplete="off" autocorrect="off">
       </div>
 
-      <!-- Step 3: Age -->
-      <div class="step" id="step3">
+      <!-- Step 4: Age -->
+      <div class="step" id="step4">
         <div class="step-label">About you</div>
         <div class="step-title" id="ageTitle">How old are<br>you?</div>
         <div class="step-sub">This helps Kira understand your hormonal profile better.</div>
         <div class="stepper">
-          <button class="stepper-btn" onclick="adjustAge(-1)">−</button>
-          <div class="stepper-value" id="ageValue">25</div>
+          <button class="stepper-btn" onclick="adjustAge(-1)">&#8722;</button>
+          <input class="stepper-value" id="ageValue" type="number" value="25" inputmode="numeric" min="13" max="60" onchange="clampAge()" onblur="clampAge()">
           <button class="stepper-btn" onclick="adjustAge(1)">+</button>
           <div class="stepper-unit">years</div>
         </div>
       </div>
 
-      <!-- Step 4: Last period date -->
-      <div class="step" id="step4">
+      <!-- Step 5: Last period -->
+      <div class="step" id="step5">
         <div class="step-label">Your cycle</div>
         <div class="step-title">When did your<br>last period<br>start?</div>
         <div class="step-sub">Kira uses this to track your cycle phase in real time.</div>
-        <input
-          class="field-input"
-          type="date"
-          id="periodInput"
-        >
+        <input class="field-input" type="date" id="periodInput">
       </div>
 
-      <!-- Step 5: Cycle length -->
-      <div class="step" id="step5">
+      <!-- Step 6: Cycle length -->
+      <div class="step" id="step6">
         <div class="step-label">Your cycle</div>
         <div class="step-title">How long is<br>your average<br>cycle?</div>
-        <div class="step-sub">Most cycles are 21–35 days. Don't worry if you're not sure — Kira will learn over time.</div>
+        <div class="step-sub">Most cycles are 21–35 days. Don't worry if you're not sure.</div>
         <div class="stepper">
-          <button class="stepper-btn" onclick="adjustCycle(-1)">−</button>
-          <div class="stepper-value" id="cycleValue">28</div>
+          <button class="stepper-btn" onclick="adjustCycle(-1)">&#8722;</button>
+          <input class="stepper-value" id="cycleValue" type="number" value="28" inputmode="numeric" min="21" max="45" onchange="clampCycle()" onblur="clampCycle()">
           <button class="stepper-btn" onclick="adjustCycle(1)">+</button>
           <div class="stepper-unit">days</div>
         </div>
       </div>
 
-      <!-- Step 6: Mood -->
-      <div class="step" id="step6">
+      <!-- Step 7: Mood -->
+      <div class="step" id="step7">
         <div class="step-label" id="moodLabel">Almost there</div>
         <div class="step-title" id="moodTitle">How are you<br>feeling today?</div>
         <div class="step-sub">Select everything that applies.</div>
         <div class="mood-grid">
-          <div class="mood-chip" onclick="toggleMood(this, 'anxious')">
-            <span class="mood-emoji">😰</span>
-            <span class="mood-label">Anxious</span>
-          </div>
-          <div class="mood-chip" onclick="toggleMood(this, 'tired')">
-            <span class="mood-emoji">😴</span>
-            <span class="mood-label">Tired</span>
-          </div>
-          <div class="mood-chip" onclick="toggleMood(this, 'irritable')">
-            <span class="mood-emoji">😤</span>
-            <span class="mood-label">Irritable</span>
-          </div>
-          <div class="mood-chip" onclick="toggleMood(this, 'sad')">
-            <span class="mood-emoji">😔</span>
-            <span class="mood-label">Low mood</span>
-          </div>
-          <div class="mood-chip" onclick="toggleMood(this, 'motivated')">
-            <span class="mood-emoji">✨</span>
-            <span class="mood-label">Motivated</span>
-          </div>
-          <div class="mood-chip" onclick="toggleMood(this, 'calm')">
-            <span class="mood-emoji">🌿</span>
-            <span class="mood-label">Calm</span>
-          </div>
-          <div class="mood-chip" onclick="toggleMood(this, 'overwhelmed')">
-            <span class="mood-emoji">🌊</span>
-            <span class="mood-label">Overwhelmed</span>
-          </div>
-          <div class="mood-chip" onclick="toggleMood(this, 'happy')">
-            <span class="mood-emoji">🌸</span>
-            <span class="mood-label">Happy</span>
-          </div>
+          <div class="mood-chip" onclick="toggleMood(this,'anxious')"><span class="mood-emoji">&#128560;</span><span class="mood-label">Anxious</span></div>
+          <div class="mood-chip" onclick="toggleMood(this,'tired')"><span class="mood-emoji">&#128564;</span><span class="mood-label">Tired</span></div>
+          <div class="mood-chip" onclick="toggleMood(this,'irritable')"><span class="mood-emoji">&#128548;</span><span class="mood-label">Irritable</span></div>
+          <div class="mood-chip" onclick="toggleMood(this,'sad')"><span class="mood-emoji">&#128532;</span><span class="mood-label">Low mood</span></div>
+          <div class="mood-chip" onclick="toggleMood(this,'motivated')"><span class="mood-emoji">&#10024;</span><span class="mood-label">Motivated</span></div>
+          <div class="mood-chip" onclick="toggleMood(this,'calm')"><span class="mood-emoji">&#127807;</span><span class="mood-label">Calm</span></div>
+          <div class="mood-chip" onclick="toggleMood(this,'overwhelmed')"><span class="mood-emoji">&#127754;</span><span class="mood-label">Overwhelmed</span></div>
+          <div class="mood-chip" onclick="toggleMood(this,'happy')"><span class="mood-emoji">&#127800;</span><span class="mood-label">Happy</span></div>
         </div>
       </div>
 
-      <!-- Step 7: Done -->
-      <div class="step" id="step7">
+      <!-- Step 8: Done -->
+      <div class="step" id="step8">
         <div class="done-animation">
-          <div class="done-circle">✦</div>
+          <div class="done-circle">&#10022;</div>
           <div class="done-title" id="doneTitle">You're all set</div>
           <div class="done-sub" id="doneSub">Kira is personalising your experience right now.</div>
           <div class="personalising-text" id="personalisingText">Setting up your profile...</div>
@@ -491,18 +573,27 @@
 
     <!-- Bottom -->
     <div class="bottom-area" id="bottomArea">
-      <button class="next-btn" id="nextBtn" onclick="nextStep()">Get started</button>
+      <button class="btn-primary" id="nextBtn" onclick="nextStep()" style="display:none;">Continue</button>
     </div>
 
   </div>
 
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
   <script>
-    const BACKEND_URL = 'https://sunniest-monroe-reciprocative.ngrok-free.dev';
+    var BACKEND = 'https://kira-backend-lcwr.onrender.com';
 
-    let currentStep = 1;
-    const totalSteps = 6;
+    // Flow: welcome(1) → signup(2) or login(2b) → name(3) → age(4) → period(5) → cycle(6) → mood(7) → done(8)
+    // Login flow: welcome(1) → login(2b) → done or home
+    var signupFlow = [1, 2, 3, 4, 5, 6, 7];
+    var loginFlow = [1, '2b'];
+    var currentFlow = null;
+    var flowIndex = 0;
+    var userId = 'user_1';
+    var isLoading = false;
 
-    let userData = {
+    var userData = {
       name: '',
       age: 25,
       last_period_date: '',
@@ -510,51 +601,275 @@
       current_moods: []
     };
 
-    // ── Set today as default for period date ──
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
+    // Set default date
+    var today = new Date();
+    var yyyy = today.getFullYear();
+    var mm = String(today.getMonth() + 1).padStart(2, '0');
+    var dd = String(today.getDate()).padStart(2, '0');
     document.getElementById('periodInput').value = yyyy + '-' + mm + '-' + dd;
     document.getElementById('periodInput').max = yyyy + '-' + mm + '-' + dd;
 
-    // ── Progress bar ──
-    function updateProgress() {
-      for (let i = 1; i <= totalSteps; i++) {
-        const el = document.getElementById('ps' + i);
-        if (!el) continue;
-        if (i < currentStep) {
-          el.className = 'progress-step done';
-        } else if (i === currentStep) {
-          el.className = 'progress-step active';
-        } else {
-          el.className = 'progress-step';
+    // ── Toast ──
+    function showToast(msg) {
+      var t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(function() { t.classList.remove('show'); }, 2500);
+    }
+
+    // ── Welcome actions ──
+    function goToSignup() {
+      currentFlow = signupFlow;
+      flowIndex = 0;
+      goForward();
+    }
+
+    function goToLogin() {
+      currentFlow = loginFlow;
+      flowIndex = 0;
+      goForward();
+    }
+
+    // ── Step transitions ──
+    function getCurrentStepId() {
+      return 'step' + currentFlow[flowIndex];
+    }
+
+    function goForward() {
+      var curEl = document.querySelector('.step.active');
+      if (curEl) {
+        curEl.classList.add('exiting');
+        curEl.classList.remove('active');
+      }
+
+      flowIndex++;
+      updateUI();
+
+      setTimeout(function() {
+        if (curEl) curEl.classList.remove('exiting');
+        var nextEl = document.getElementById(getCurrentStepId());
+        if (nextEl) nextEl.classList.add('active');
+      }, 350);
+    }
+
+    function goBack() {
+      if (flowIndex <= 0) return;
+
+      var curEl = document.querySelector('.step.active');
+      if (curEl) {
+        curEl.style.transition = 'none';
+        curEl.style.transform = 'translateX(40px)';
+        curEl.style.opacity = '0';
+        curEl.classList.remove('active');
+        setTimeout(function() { curEl.style.transition = ''; }, 10);
+      }
+
+      flowIndex--;
+      updateUI();
+
+      setTimeout(function() {
+        var prevEl = document.getElementById(getCurrentStepId());
+        if (prevEl) {
+          prevEl.style.transition = 'none';
+          prevEl.style.transform = 'translateX(-40px)';
+          prevEl.style.opacity = '0';
+          prevEl.classList.add('active');
+          setTimeout(function() {
+            prevEl.style.transition = '';
+            prevEl.style.transform = '';
+            prevEl.style.opacity = '';
+          }, 20);
         }
+      }, 10);
+    }
+
+    function updateUI() {
+      var stepKey = currentFlow[flowIndex];
+      var isWelcome = flowIndex === 0 && currentFlow === signupFlow && stepKey === 1;
+
+      // Back button
+      var backBtn = document.getElementById('backBtn');
+      if (flowIndex > 0) {
+        backBtn.classList.remove('hidden');
+      } else {
+        backBtn.classList.add('hidden');
+      }
+
+      // Progress bar — only show for signup flow after auth step
+      var progressBar = document.getElementById('progressBar');
+      if (currentFlow === signupFlow && flowIndex >= 1) {
+        progressBar.style.display = '';
+        // Steps 2–7 map to progress 1–6 (we skip welcome)
+        var total = 7; // ps1–ps7
+        for (var i = 1; i <= total; i++) {
+          var el = document.getElementById('ps' + i);
+          var progressIdx = flowIndex; // 1-based
+          if (i < progressIdx) {
+            el.className = 'progress-step done';
+          } else if (i === progressIdx) {
+            el.className = 'progress-step active';
+          } else {
+            el.className = 'progress-step';
+          }
+        }
+      } else if (currentFlow === loginFlow) {
+        progressBar.style.display = 'none';
+      } else {
+        progressBar.style.display = 'none';
+      }
+
+      // Next button
+      var nextBtn = document.getElementById('nextBtn');
+      if (stepKey === 1) {
+        // Welcome — buttons are inline
+        nextBtn.style.display = 'none';
+      } else if (stepKey === 2) {
+        nextBtn.style.display = '';
+        nextBtn.textContent = 'Create account';
+        nextBtn.onclick = function() { nextStep(); };
+      } else if (stepKey === '2b') {
+        nextBtn.style.display = '';
+        nextBtn.textContent = 'Log in';
+        nextBtn.onclick = function() { nextStep(); };
+      } else if (stepKey === 7) {
+        nextBtn.style.display = '';
+        nextBtn.textContent = 'Meet Kira \u2192';
+        nextBtn.onclick = function() { nextStep(); };
+      } else {
+        nextBtn.style.display = '';
+        nextBtn.textContent = 'Continue';
+        nextBtn.onclick = function() { nextStep(); };
       }
     }
 
-    // ── Step navigation ──
+    // ── Next step logic ──
     function nextStep() {
-      // Validate current step
-      if (currentStep === 2) {
-        const name = document.getElementById('nameInput').value.trim();
+      if (isLoading) return;
+      var stepKey = currentFlow[flowIndex];
+
+      // Validate signup
+      if (stepKey === 2) {
+        var username = document.getElementById('signupUsername').value.trim();
+        var pw = document.getElementById('signupPassword').value;
+        var confirm = document.getElementById('signupConfirm').value;
+
+        document.getElementById('usernameError').textContent = '';
+        document.getElementById('passwordError').textContent = '';
+        document.getElementById('confirmError').textContent = '';
+
+        var valid = true;
+        if (!username || username.length < 3) {
+          document.getElementById('usernameError').textContent = 'At least 3 characters';
+          valid = false;
+        } else if (username.length > 20) {
+          document.getElementById('usernameError').textContent = '20 characters max';
+          valid = false;
+        } else if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+          document.getElementById('usernameError').textContent = 'Letters, numbers, and underscores only';
+          valid = false;
+        }
+        if (pw.length < 8) {
+          document.getElementById('passwordError').textContent = 'At least 8 characters';
+          valid = false;
+        }
+        if (pw !== confirm) {
+          document.getElementById('confirmError').textContent = 'Passwords don\u2019t match';
+          valid = false;
+        }
+        if (!valid) return;
+
+        // Call signup API
+        isLoading = true;
+        document.getElementById('nextBtn').disabled = true;
+        fetch(BACKEND + '/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: username, password: pw })
+        })
+        .then(function(res) { return res.json().then(function(d) { return { ok: res.ok, data: d }; }); })
+        .then(function(result) {
+          isLoading = false;
+          document.getElementById('nextBtn').disabled = false;
+          if (!result.ok) {
+            document.getElementById('usernameError').textContent = result.data.error || 'Signup failed';
+            return;
+          }
+          userId = result.data.user_id || result.data.username;
+          goForward();
+        })
+        .catch(function() {
+          isLoading = false;
+          document.getElementById('nextBtn').disabled = false;
+          showToast('Connection error — try again');
+        });
+        return;
+      }
+
+      // Validate login
+      if (stepKey === '2b') {
+        var lu = document.getElementById('loginUsername').value.trim();
+        var lp = document.getElementById('loginPassword').value;
+        document.getElementById('loginError').textContent = '';
+
+        if (!lu || !lp) {
+          document.getElementById('loginError').textContent = 'Enter your username and password';
+          return;
+        }
+
+        isLoading = true;
+        document.getElementById('nextBtn').disabled = true;
+        fetch(BACKEND + '/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: lu, password: lp })
+        })
+        .then(function(res) { return res.json().then(function(d) { return { ok: res.ok, data: d }; }); })
+        .then(function(result) {
+          isLoading = false;
+          document.getElementById('nextBtn').disabled = false;
+          if (!result.ok) {
+            document.getElementById('loginError').textContent = result.data.error || 'Login failed';
+            return;
+          }
+          userId = result.data.user_id || result.data.username;
+          if (result.data.onboarding_complete) {
+            // Skip onboarding, go straight to home
+            window.AppInventor.setWebViewString('navigate:home');
+          } else {
+            // Need to complete onboarding — switch to signup flow from step 3
+            currentFlow = signupFlow;
+            flowIndex = 1; // will become 2 after goForward
+            goForward();
+          }
+        })
+        .catch(function() {
+          isLoading = false;
+          document.getElementById('nextBtn').disabled = false;
+          showToast('Connection error — try again');
+        });
+        return;
+      }
+
+      // Validate name
+      if (stepKey === 3) {
+        var name = document.getElementById('nameInput').value.trim();
         if (!name) {
           document.getElementById('nameInput').focus();
           document.getElementById('nameInput').style.borderColor = 'rgba(232,165,176,0.6)';
           return;
         }
         userData.name = name;
-        // Personalise subsequent steps
-        document.getElementById('ageTitle').textContent = 'How old are\nyou, ' + name + '?';
+        document.getElementById('ageTitle').innerHTML = 'How old are<br>you, ' + name + '?';
         document.getElementById('moodLabel').textContent = 'Almost there, ' + name;
-        document.getElementById('moodTitle').textContent = 'How are you\nfeeling today?';
       }
 
-      if (currentStep === 3) {
-        userData.age = parseInt(document.getElementById('ageValue').textContent);
+      // Validate age
+      if (stepKey === 4) {
+        userData.age = parseInt(document.getElementById('ageValue').value) || 25;
       }
 
-      if (currentStep === 4) {
+      // Validate period
+      if (stepKey === 5) {
         userData.last_period_date = document.getElementById('periodInput').value;
         if (!userData.last_period_date) {
           document.getElementById('periodInput').focus();
@@ -562,96 +877,103 @@
         }
       }
 
-      if (currentStep === 5) {
-        userData.cycle_length = parseInt(document.getElementById('cycleValue').textContent);
+      // Validate cycle
+      if (stepKey === 6) {
+        userData.cycle_length = parseInt(document.getElementById('cycleValue').value) || 28;
       }
 
-      if (currentStep === 6) {
-        // Last step — submit
+      // Submit on mood step
+      if (stepKey === 7) {
         submitOnboarding();
         return;
       }
 
-      // Animate transition
-      const current = document.getElementById('step' + currentStep);
-      current.classList.add('exiting');
-      current.classList.remove('active');
-
-      setTimeout(function() {
-        current.classList.remove('exiting');
-        currentStep++;
-        updateProgress();
-        updateNextBtn();
-
-        const next = document.getElementById('step' + currentStep);
-        next.classList.add('active');
-
-        // Show/hide progress bar and bottom on last step
-        if (currentStep === 7) {
-          document.getElementById('progressBar').style.opacity = '0';
-          document.getElementById('bottomArea').style.display = 'none';
-        }
-      }, 350);
+      goForward();
     }
 
-    function updateNextBtn() {
-      const btn = document.getElementById('nextBtn');
-      if (currentStep === 1) {
-        btn.textContent = 'Get started';
-      } else if (currentStep === 6) {
-        btn.textContent = 'Meet Kira →';
-      } else {
-        btn.textContent = 'Continue';
+    function prevStep() {
+      if (flowIndex <= 0) return;
+
+      // If at step 3 (name) and we came from login flow, go back to welcome
+      var stepKey = currentFlow[flowIndex];
+      if (stepKey === 2 || stepKey === '2b') {
+        // Going back to welcome
+        var curEl = document.querySelector('.step.active');
+        if (curEl) {
+          curEl.classList.remove('active');
+        }
+        flowIndex = 0;
+        currentFlow = null;
+
+        document.getElementById('backBtn').classList.add('hidden');
+        document.getElementById('progressBar').style.display = 'none';
+        document.getElementById('nextBtn').style.display = 'none';
+        document.getElementById('step1').classList.add('active');
+        return;
       }
+
+      goBack();
     }
 
     // ── Steppers ──
     function adjustAge(delta) {
-      let val = parseInt(document.getElementById('ageValue').textContent) + delta;
-      val = Math.max(13, Math.min(60, val));
-      document.getElementById('ageValue').textContent = val;
+      var el = document.getElementById('ageValue');
+      var val = parseInt(el.value) || 25;
+      val = Math.max(13, Math.min(60, val + delta));
+      el.value = val;
     }
-
+    function clampAge() {
+      var el = document.getElementById('ageValue');
+      var val = parseInt(el.value);
+      if (isNaN(val) || val < 13) val = 13;
+      if (val > 60) val = 60;
+      el.value = val;
+    }
     function adjustCycle(delta) {
-      let val = parseInt(document.getElementById('cycleValue').textContent) + delta;
-      val = Math.max(21, Math.min(45, val));
-      document.getElementById('cycleValue').textContent = val;
+      var el = document.getElementById('cycleValue');
+      var val = parseInt(el.value) || 28;
+      val = Math.max(21, Math.min(45, val + delta));
+      el.value = val;
+    }
+    function clampCycle() {
+      var el = document.getElementById('cycleValue');
+      var val = parseInt(el.value);
+      if (isNaN(val) || val < 21) val = 21;
+      if (val > 45) val = 45;
+      el.value = val;
     }
 
-    // ── Mood selection ──
+    // ── Mood ──
     function toggleMood(el, mood) {
       el.classList.toggle('selected');
       if (el.classList.contains('selected')) {
-        if (!userData.current_moods.includes(mood)) {
-          userData.current_moods.push(mood);
-        }
+        if (userData.current_moods.indexOf(mood) === -1) userData.current_moods.push(mood);
       } else {
         userData.current_moods = userData.current_moods.filter(function(m) { return m !== mood; });
       }
     }
 
-    // ── Submit onboarding ──
+    // ── Submit ──
     async function submitOnboarding() {
-      // Animate to done step
-      const current = document.getElementById('step' + currentStep);
-      current.classList.add('exiting');
-      current.classList.remove('active');
+      var curEl = document.querySelector('.step.active');
+      if (curEl) {
+        curEl.classList.add('exiting');
+        curEl.classList.remove('active');
+      }
 
       setTimeout(function() {
-        current.classList.remove('exiting');
-        currentStep = 7;
-        document.getElementById('progressBar').style.opacity = '0';
+        if (curEl) curEl.classList.remove('exiting');
+        document.getElementById('topBar').style.opacity = '0';
         document.getElementById('bottomArea').style.display = 'none';
-        document.getElementById('step7').classList.add('active');
-        document.getElementById('doneTitle').textContent = 'You\'re all set, ' + userData.name + ' ✦';
-        document.getElementById('doneSub').textContent = 'Kira is personalising your experience right now.';
+        document.getElementById('step8').classList.add('active');
+        document.getElementById('doneTitle').textContent = 'You\u2019re all set, ' + userData.name + ' \u2726';
       }, 350);
 
-      // Send to backend
       try {
         document.getElementById('personalisingText').textContent = 'Saving your profile...';
+        userData.user_id = userId;
 
-        await fetch(BACKEND_URL + '/save_onboarding', {
+        await fetch(BACKEND + '/save_onboarding', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(userData)
@@ -663,18 +985,69 @@
         document.getElementById('personalisingText').textContent = 'Preparing your home screen...';
         await new Promise(function(r) { setTimeout(r, 1000); });
 
-        document.getElementById('personalisingText').textContent = 'Ready ✦';
+        document.getElementById('personalisingText').textContent = 'Ready \u2726';
         await new Promise(function(r) { setTimeout(r, 600); });
 
-        // Navigate to home
         window.AppInventor.setWebViewString('navigate:home');
-
       } catch(err) {
         document.getElementById('personalisingText').textContent = 'Almost ready...';
         await new Promise(function(r) { setTimeout(r, 1500); });
         window.AppInventor.setWebViewString('navigate:home');
       }
     }
+
+    // ── Prevent body scroll ──
+    var stepsContainer = document.querySelector('.steps-container');
+    document.addEventListener('touchmove', function(e) {
+      var target = e.target;
+      while (target && target !== document.body && target !== document.documentElement) {
+        if (target === stepsContainer) return;
+        target = target.parentNode;
+      }
+      e.preventDefault();
+    }, { passive: false });
+
+    // ── Keyboard handling ──
+    var wrapper = document.getElementById('pageWrapper');
+    var lastOnboardVH = window.innerHeight;
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', function() {
+        var newH = window.visualViewport.height;
+        wrapper.style.height = newH + 'px';
+        window.scrollTo(0, 0);
+        document.body.scrollTop = 0;
+        document.documentElement.scrollTop = 0;
+        // Scroll focused input into view when keyboard opens
+        if (newH < lastOnboardVH && document.activeElement &&
+            (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+          document.activeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        lastOnboardVH = newH;
+      });
+      window.visualViewport.addEventListener('scroll', function() {
+        window.scrollTo(0, 0);
+      });
+    }
+
+    document.addEventListener('focus', function(e) {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        setTimeout(function() {
+          window.scrollTo(0, 0);
+          e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 300);
+      }
+    }, true);
+
+    document.addEventListener('blur', function(e) {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        setTimeout(function() {
+          window.scrollTo(0, 0);
+          document.body.scrollTop = 0;
+          document.documentElement.scrollTop = 0;
+        }, 100);
+      }
+    }, true);
   </script>
 </body>
 </html>

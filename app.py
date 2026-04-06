@@ -29,10 +29,15 @@ client = OpenAI(
 app = Flask(__name__)
 CORS(app)
 
+# ─── Helper: Per-User Subcollection ─────────────────────────
+
+def user_collection(user_id, collection_name):
+    return db.collection('users').document(user_id).collection(collection_name)
+
 # ─── User Summary Functions ──────────────────────────────────
 
-def get_user_summary():
-    doc = db.collection('users').document('user_1').get()
+def get_user_summary(user_id='user_1'):
+    doc = db.collection('users').document(user_id).get()
     base = {
         "last_updated": None,
         "cycle_summary": {
@@ -69,19 +74,19 @@ def get_user_summary():
         return data
     return base
 
-def update_user_summary():
-    # Get all logs
-    emotion_logs = [d.to_dict() for d in db.collection('emotion_logs').stream()]
-    sleep_logs = [d.to_dict() for d in db.collection('sleep_logs').stream()]
-    diet_logs = [d.to_dict() for d in db.collection('diet_logs').stream()]
+def update_user_summary(user_id='user_1'):
+    # Get all logs from user subcollections
+    emotion_logs = [d.to_dict() for d in user_collection(user_id, 'emotion_logs').stream()]
+    sleep_logs = [d.to_dict() for d in user_collection(user_id, 'sleep_logs').stream()]
+    diet_logs = [d.to_dict() for d in user_collection(user_id, 'diet_logs').stream()]
 
-    summary = get_user_summary()
+    summary = get_user_summary(user_id)
 
     # Update emotion patterns
     if emotion_logs:
         emotions = [l['emotion'] for l in emotion_logs]
         summary['emotion_patterns']['most_common_emotion'] = max(set(emotions), key=emotions.count)
-        
+
         luteal_logs = [l for l in emotion_logs if l['phase'] == 'luteal']
         if luteal_logs:
             summary['emotion_patterns']['highest_risk_phase'] = 'luteal'
@@ -102,7 +107,7 @@ def update_user_summary():
             summary['diet_patterns']['most_common_craving'] = max(set(cravings), key=cravings.count)
 
     # Update intervention patterns
-    intervention_logs = [d.to_dict() for d in db.collection('intervention_logs').stream()]
+    intervention_logs = [d.to_dict() for d in user_collection(user_id, 'intervention_logs').stream()]
     if intervention_logs:
         # Most effective (highest average rating)
         from collections import defaultdict
@@ -131,7 +136,7 @@ def update_user_summary():
     summary['last_updated'] = datetime.now().strftime("%Y-%m-%d")
 
     # Save updated summary
-    db.collection('users').document('user_1').set(summary)
+    db.collection('users').document(user_id).set(summary)
     return summary
 
 # ─── Cycle Functions ─────────────────────────────────────────
@@ -171,12 +176,13 @@ def analyze():
     if isinstance(data, list):
         data = {item[0]: item[1] for item in data}
 
+    user_id = data.get('user_id', 'user_1')
     user_text = data.get('text', '')
     cycle_phase = data.get('phase', 'unknown')
     cycle_day = data.get('cycle_day', 0)
 
     # Get user summary for personalization
-    summary = get_user_summary()
+    summary = get_user_summary(user_id)
     
     summary_text = f"""
     User's historical patterns:
@@ -223,7 +229,7 @@ def analyze():
     result = json.loads(response.choices[0].message.content)
 
     # Save log to Firebase
-    db.collection('emotion_logs').add({
+    user_collection(user_id, 'emotion_logs').add({
         "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
         "emotion": result['emotion'],
         "user_text": user_text,
@@ -240,12 +246,13 @@ def log_sleep():
     if isinstance(data, list):
         data = {item[0]: item[1] for item in data}
 
+    user_id = data.get('user_id', 'user_1')
     hours = data.get('hours', 0)
     quality = data.get('quality', 'unknown')
     cycle_phase = data.get('phase', 'unknown')
     cycle_day = data.get('cycle_day', 0)
 
-    summary = get_user_summary()
+    summary = get_user_summary(user_id)
 
     prompt = f"""
     You are a compassionate women's health assistant.
@@ -274,7 +281,7 @@ def log_sleep():
     result = json.loads(response.choices[0].message.content)
 
     # Save to Firebase
-    db.collection('sleep_logs').add({
+    user_collection(user_id, 'sleep_logs').add({
         "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
         "hours": hours,
         "quality": quality,
@@ -283,7 +290,7 @@ def log_sleep():
     })
 
     # Update summary
-    update_user_summary()
+    update_user_summary(user_id)
 
     return jsonify(result)
 
@@ -293,12 +300,13 @@ def log_diet():
     if isinstance(data, list):
         data = {item[0]: item[1] for item in data}
 
+    user_id = data.get('user_id', 'user_1')
     craving = data.get('craving', '')
     ate = data.get('ate', '')
     cycle_phase = data.get('phase', 'unknown')
     cycle_day = data.get('cycle_day', 0)
 
-    summary = get_user_summary()
+    summary = get_user_summary(user_id)
 
     prompt = f"""
     You are a compassionate women's health assistant.
@@ -328,7 +336,7 @@ def log_diet():
     result = json.loads(response.choices[0].message.content)
 
     # Save to Firebase
-    db.collection('diet_logs').add({
+    user_collection(user_id, 'diet_logs').add({
         "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
         "craving": craving,
         "ate": ate,
@@ -337,7 +345,7 @@ def log_diet():
     })
 
     # Update summary
-    update_user_summary()
+    update_user_summary(user_id)
 
     return jsonify(result)
 
@@ -347,12 +355,13 @@ def report_period():
     if isinstance(data, list):
         data = {item[0]: item[1] for item in data}
 
+    user_id = data.get('user_id', 'user_1')
     period_date = data.get('period_date')
     if not period_date:
         return jsonify({"error": "period_date is required"}), 400
 
     # Get existing period dates from Firebase
-    user_doc = db.collection('users').document('user_1').get()
+    user_doc = db.collection('users').document(user_id).get()
     user_data = user_doc.to_dict() if user_doc.exists else {}
     period_dates = user_data.get('period_dates', [])
 
@@ -362,7 +371,7 @@ def report_period():
 
     avg_cycle = calculate_average_cycle(period_dates)
 
-    db.collection('users').document('user_1').set({
+    db.collection('users').document(user_id).set({
         'period_dates': period_dates,
         'average_cycle_length': avg_cycle,
         'last_period_date': max(period_dates)
@@ -377,7 +386,8 @@ def report_period():
 
 @app.route('/cycle_status', methods=['GET'])
 def cycle_status():
-    user_doc = db.collection('users').document('user_1').get()
+    user_id = request.args.get('user_id', 'user_1')
+    user_doc = db.collection('users').document(user_id).get()
     if not user_doc.exists:
         return jsonify({"error": "No period data recorded yet"}), 400
 
@@ -398,6 +408,7 @@ def rate_intervention():
     if isinstance(data, list):
         data = {item[0]: item[1] for item in data}
 
+    user_id = data.get('user_id', 'user_1')
     intervention_id = data.get('intervention_id', '')
     intervention_name = data.get('intervention_name', data.get('intervention', ''))
     intervention_type = data.get('intervention_type', '')
@@ -406,8 +417,8 @@ def rate_intervention():
     cycle_day = data.get('cycle_day', 0)
     duration_seconds = data.get('duration_seconds', 0)
 
-    # Save full log to intervention_logs
-    db.collection('intervention_logs').add({
+    # Save full log to intervention_logs subcollection
+    user_collection(user_id, 'intervention_logs').add({
         'date': datetime.now().strftime("%Y-%m-%d %H:%M"),
         'intervention_id': intervention_id,
         'intervention_name': intervention_name,
@@ -418,14 +429,14 @@ def rate_intervention():
         'duration_seconds': duration_seconds
     })
 
-    user_doc = db.collection('users').document('user_1').get()
+    user_doc = db.collection('users').document(user_id).get()
     user_data = user_doc.to_dict() if user_doc.exists else {}
 
     if rating >= 4:
         effective = user_data.get('effective_interventions', [])
         if intervention_name not in effective:
             effective.append(intervention_name)
-        db.collection('users').document('user_1').set({
+        db.collection('users').document(user_id).set({
             'effective_interventions': effective
         }, merge=True)
 
@@ -433,7 +444,7 @@ def rate_intervention():
         ineffective = user_data.get('ineffective_interventions', [])
         if intervention_name not in ineffective:
             ineffective.append(intervention_name)
-        db.collection('users').document('user_1').set({
+        db.collection('users').document(user_id).set({
             'ineffective_interventions': ineffective
         }, merge=True)
 
@@ -456,12 +467,13 @@ def chat():
     if not isinstance(data, dict):
         data = {}
 
+    user_id = data.get('user_id', 'user_1')
     user_message = data.get('message', '')
     cycle_phase = data.get('phase', 'unknown')
     cycle_day = data.get('cycle_day', 0)
 
     # Get conversation history from Firebase
-    history_ref = db.collection('chat_history').order_by(
+    history_ref = user_collection(user_id, 'chat_history').order_by(
         'timestamp').limit_to_last(10)
     history_docs = history_ref.get()
     conversation_history = []
@@ -473,7 +485,7 @@ def chat():
         })
 
     # Get user summary for personalization
-    summary = get_user_summary()
+    summary = get_user_summary(user_id)
 
     # System prompt — the AI's personality
     system_prompt = f"""    
@@ -573,21 +585,21 @@ def chat():
             clean_message = ai_message.replace(tag, '').strip()
 
     # Save user message to Firebase
-    db.collection('chat_history').add({
+    user_collection(user_id, 'chat_history').add({
         'role': 'user',
         'content': user_message,
         'timestamp': firestore.SERVER_TIMESTAMP
     })
 
     # Save AI response to Firebase
-    db.collection('chat_history').add({
+    user_collection(user_id, 'chat_history').add({
         'role': 'assistant',
         'content': clean_message,
         'timestamp': firestore.SERVER_TIMESTAMP
     })
 
     # Save emotion log silently
-    db.collection('emotion_logs').add({
+    user_collection(user_id, 'emotion_logs').add({
         "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
         "emotion": detected_emotion,
         "user_text": user_message,
@@ -597,7 +609,7 @@ def chat():
     })
 
     # Update user summary periodically
-    update_user_summary()
+    update_user_summary(user_id)
 
     return jsonify({
         "message": clean_message,
@@ -607,8 +619,12 @@ def chat():
 
 @app.route('/clear_chat', methods=['POST'])
 def clear_chat():
-    # Delete all chat history
-    docs = db.collection('chat_history').stream()
+    data = request.get_json(force=True)
+    if isinstance(data, list):
+        data = {item[0]: item[1] for item in data}
+    user_id = data.get('user_id', 'user_1')
+    # Delete all chat history for this user
+    docs = user_collection(user_id, 'chat_history').stream()
     for doc in docs:
         doc.reference.delete()
     return jsonify({"message": "Chat cleared"})
@@ -735,32 +751,25 @@ INTERVENTION_LIBRARY = {
         {"id": "box_breathing", "name": "Box Breathing", "description": "4-4-4-4 breath pattern to calm your nervous system", "duration": "4 min", "best_for": ["anxiety", "stress", "overwhelmed"], "icon": "\U0001f32c\ufe0f"}
     ],
     "urge_surfing": [
-        {"id": "urge_surf_5", "name": "5-Minute Urge Surf", "description": "Ride the wave of a craving without acting on it", "duration": "5 min", "best_for": ["craving", "irritability"], "icon": "\U0001f30a"},
-        {"id": "urge_surf_15", "name": "Deep Urge Surf", "description": "Extended craving timer with mindfulness prompts", "duration": "15 min", "best_for": ["craving"], "icon": "\U0001f30a"}
+        {"id": "urge_surf", "name": "Urge Surfing", "description": "Ride the wave of a craving without acting on it", "duration": "5–15 min", "best_for": ["craving", "irritability"], "icon": "\U0001f30a"}
     ],
     "haptic": [
-        {"id": "haptic_calm", "name": "Calm Reset", "description": "Rhythmic vibration pattern to ground your nervous system", "duration": "2 min", "best_for": ["anxiety", "stress", "overwhelmed"], "icon": "\U0001f4f3"},
-        {"id": "haptic_energise", "name": "Energy Pulse", "description": "Gentle tapping pattern to lift low mood and energy", "duration": "2 min", "best_for": ["low_motivation", "tired"], "icon": "\u26a1"}
+        {"id": "haptic_reset", "name": "Haptic Reset", "description": "Rhythmic vibration patterns to calm or energise your nervous system", "duration": "2 min", "best_for": ["anxiety", "stress", "low_motivation"], "icon": "\U0001f4f3"}
     ],
     "grounding": [
         {"id": "54321", "name": "5-4-3-2-1 Grounding", "description": "Use your senses to anchor yourself to the present moment", "duration": "3 min", "best_for": ["anxiety", "rumination", "overwhelmed"], "icon": "\U0001f33f"}
     ],
-    "cognitive": [
-        {"id": "self_compassion", "name": "Self-Compassion Script", "description": "A guided script to soften self-criticism during difficult moments", "duration": "3 min", "best_for": ["shame", "rumination", "irritability"], "icon": "\U0001f49c"},
-        {"id": "cognitive_defusion", "name": "Thought Defusion", "description": "Create distance from unhelpful thoughts so they lose their grip", "duration": "4 min", "best_for": ["rumination", "anxiety", "shame"], "icon": "\U0001f52e"},
-        {"id": "delay_decide", "name": "Delay and Decide", "description": "Pause before acting on an urge or emotion with a structured prompt", "duration": "2 min", "best_for": ["craving", "irritability"], "icon": "\u23f8\ufe0f"}
-    ],
     "journaling": [
-        {"id": "phase_reflect", "name": "Phase Reflection", "description": "Short guided journaling prompts tailored to your current cycle phase", "duration": "5 min", "best_for": ["low_motivation", "rumination", "social_sensitivity"], "icon": "\U0001f4d3"},
-        {"id": "gratitude_micro", "name": "Micro Gratitude", "description": "Three small things that went okay today \u2014 rewires negativity bias", "duration": "2 min", "best_for": ["low_motivation", "shame", "rumination"], "icon": "\U0001f338"}
+        {"id": "phase_reflect", "name": "Phase Reflection", "description": "Guided journaling prompts tailored to your current cycle phase", "duration": "5 min", "best_for": ["low_motivation", "rumination", "social_sensitivity"], "icon": "\U0001f4d3"}
     ]
 }
 
 @app.route('/intervention_library', methods=['GET'])
 def intervention_library():
+    user_id = request.args.get('user_id', 'user_1')
     # Get user's ratings from intervention_logs
-    logs = [d.to_dict() for d in db.collection('intervention_logs').stream()]
-    user_doc = db.collection('users').document('user_1').get()
+    logs = [d.to_dict() for d in user_collection(user_id, 'intervention_logs').stream()]
+    user_doc = db.collection('users').document(user_id).get()
     user_data = user_doc.to_dict() if user_doc.exists else {}
     effective = user_data.get('effective_interventions', [])
 
@@ -792,11 +801,12 @@ def intervention_library():
 
 @app.route('/personalised_intervention', methods=['GET'])
 def personalised_intervention():
+    user_id = request.args.get('user_id', 'user_1')
     emotion = request.args.get('emotion', '')
     phase = request.args.get('phase', '')
 
     # Fetch user's intervention logs
-    logs = [d.to_dict() for d in db.collection('intervention_logs').stream()]
+    logs = [d.to_dict() for d in user_collection(user_id, 'intervention_logs').stream()]
 
     # Find interventions rated >= 4 that match the emotion
     from collections import defaultdict
@@ -844,7 +854,8 @@ def personalised_intervention():
 
 @app.route('/home_data', methods=['GET'])
 def home_data():
-    user_doc = db.collection('users').document('user_1').get()
+    user_id = request.args.get('user_id', 'user_1')
+    user_doc = db.collection('users').document(user_id).get()
     if not user_doc.exists:
         return jsonify({"error": "No user data"}), 400
 
@@ -866,10 +877,10 @@ def home_data():
         "luteal": ["Higher sensitivity", "Craving intensity", "Lower energy", "Introspective"]
     }
 
-    result = {**cycle, 'personalised': False}
+    result = {**cycle, 'personalised': False, 'name': user_data.get('name', '')}
 
     # Check emotion logs for personalisation
-    emotion_logs = [d.to_dict() for d in db.collection('emotion_logs').stream()]
+    emotion_logs = [d.to_dict() for d in user_collection(user_id, 'emotion_logs').stream()]
     if len(emotion_logs) >= 14:
         phase_emotions = [l['emotion'] for l in emotion_logs if l.get('phase') == phase]
         if phase_emotions:
@@ -886,7 +897,7 @@ def home_data():
         result['tendencies_note'] = "Typical for this phase"
 
     # Check sleep logs
-    sleep_logs = [d.to_dict() for d in db.collection('sleep_logs').stream()]
+    sleep_logs = [d.to_dict() for d in user_collection(user_id, 'sleep_logs').stream()]
     phase_sleep = [l for l in sleep_logs if l.get('phase') == phase]
     if phase_sleep:
         avg_sleep = round(sum(l.get('hours', 0) for l in phase_sleep) / len(phase_sleep), 1)
@@ -896,7 +907,7 @@ def home_data():
         result['sleep'] = {'average_hours': phase_averages.get(phase, 7.0), 'personalised': False}
 
     # Check diet logs
-    diet_logs = [d.to_dict() for d in db.collection('diet_logs').stream()]
+    diet_logs = [d.to_dict() for d in user_collection(user_id, 'diet_logs').stream()]
     phase_diet = [l for l in diet_logs if l.get('phase') == phase]
     if phase_diet:
         cravings = [l.get('craving', '') for l in phase_diet if l.get('craving')]
@@ -918,7 +929,9 @@ def save_journal():
     if isinstance(data, list):
         data = {item[0]: item[1] for item in data}
 
-    db.collection('journal_logs').add({
+    user_id = data.get('user_id', 'user_1')
+
+    user_collection(user_id, 'journal_logs').add({
         'date': datetime.now().strftime("%Y-%m-%d %H:%M"),
         'prompt': data.get('prompt', ''),
         'entry': data.get('entry', ''),

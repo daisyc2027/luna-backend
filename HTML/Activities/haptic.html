@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Kira — Haptic Reset</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=DM+Sans:wght@300;400;500&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --rose: #e8a5b0;
+      --blush: #f2c4ce;
+      --lavender: #c9b8e8;
+      --deep: #2d1f35;
+      --card: rgba(255, 255, 255, 0.09);
+      --border: rgba(255, 255, 255, 0.14);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+      height: 100%;
+      background: var(--deep);
+      font-family: 'DM Sans', sans-serif;
+      color: white;
+      overflow: hidden;
+      position: fixed;
+      width: 100%;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -30%;
+      left: -20%;
+      width: 70%;
+      height: 70%;
+      background: radial-gradient(circle, rgba(201, 184, 232, 0.22) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      bottom: -20%;
+      right: -20%;
+      width: 60%;
+      height: 60%;
+      background: radial-gradient(circle, rgba(232, 165, 176, 0.18) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page-wrapper {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      height: 100dvh;
+      position: relative;
+      z-index: 1;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      padding: 18px 20px 12px;
+      flex-shrink: 0;
+    }
+
+    .header h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-weight: 300;
+      font-size: 22px;
+      color: var(--blush);
+      letter-spacing: 0.5px;
+    }
+
+    .exit-btn {
+      position: absolute;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .exit-btn:active {
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    /* ── Content area ── */
+    .content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0 24px 24px;
+      max-width: 420px;
+      width: 100%;
+      margin: 0 auto;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* ── Screen visibility ── */
+    .screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    /* ── Mode selection cards ── */
+    .mode-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      width: 100%;
+      margin-top: 12px;
+    }
+
+    .mode-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 22px 20px;
+      cursor: pointer;
+      transition: border-color 0.25s ease, background 0.25s ease;
+      min-height: 44px;
+    }
+
+    .mode-card:active {
+      background: rgba(255, 255, 255, 0.14);
+    }
+
+    .mode-card.selected {
+      border-color: var(--lavender);
+      background: rgba(201, 184, 232, 0.12);
+    }
+
+    .mode-card.selected.energy {
+      border-color: var(--rose);
+      background: rgba(232, 165, 176, 0.12);
+    }
+
+    .mode-card-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-weight: 300;
+      font-size: 20px;
+      color: var(--blush);
+      margin-bottom: 6px;
+    }
+
+    .mode-card-desc {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.55);
+      line-height: 1.5;
+    }
+
+    /* ── Mode detail + instructions ── */
+    .mode-detail {
+      text-align: center;
+      margin-top: 20px;
+      min-height: 60px;
+    }
+
+    .mode-detail p {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.6);
+      line-height: 1.6;
+      margin-bottom: 6px;
+    }
+
+    .ios-notice {
+      font-size: 12px;
+      color: var(--lavender);
+      opacity: 0.8;
+      margin-top: 4px;
+      font-style: italic;
+    }
+
+    /* ── Start button ── */
+    .start-btn {
+      margin-top: 24px;
+      padding: 14px 48px;
+      border-radius: 30px;
+      border: 1px solid var(--border);
+      background: linear-gradient(135deg, rgba(201, 184, 232, 0.25), rgba(232, 165, 176, 0.25));
+      color: white;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px;
+      font-weight: 400;
+      letter-spacing: 1px;
+      cursor: pointer;
+      min-height: 44px;
+      min-width: 44px;
+      transition: opacity 0.2s ease;
+    }
+
+    .start-btn:active {
+      opacity: 0.7;
+    }
+
+    .start-btn:disabled {
+      opacity: 0.3;
+      cursor: default;
+    }
+
+    /* ── Session screen ── */
+    .timer-text {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      font-size: 42px;
+      color: var(--blush);
+      margin-bottom: 28px;
+      letter-spacing: 2px;
+    }
+
+    .pulse-container {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 32px;
+    }
+
+    .pulse-ring {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .pulse-ring.calm {
+      background: radial-gradient(circle, rgba(201, 184, 232, 0.18) 0%, transparent 70%);
+    }
+
+    .pulse-ring.energy {
+      background: radial-gradient(circle, rgba(232, 165, 176, 0.18) 0%, transparent 70%);
+    }
+
+    .pulse-circle {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      z-index: 1;
+      will-change: transform;
+    }
+
+    .pulse-circle.calm {
+      background: radial-gradient(circle, var(--lavender), #a48fd4);
+      box-shadow: 0 0 50px rgba(201, 184, 232, 0.35);
+    }
+
+    .pulse-circle.energy {
+      background: radial-gradient(circle, var(--rose), #d48a96);
+      box-shadow: 0 0 50px rgba(232, 165, 176, 0.35);
+    }
+
+    /* Calm pulse: ~0.5Hz = 2s cycle */
+    @keyframes pulseCalmCircle {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.35); }
+    }
+
+    @keyframes pulseCalmRing {
+      0%, 100% { transform: scale(0.9); opacity: 0.6; }
+      50% { transform: scale(1.4); opacity: 0; }
+    }
+
+    /* Energy pulse: ~1Hz = 1s cycle */
+    @keyframes pulseEnergyCircle {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.25); }
+    }
+
+    @keyframes pulseEnergyRing {
+      0%, 100% { transform: scale(0.9); opacity: 0.6; }
+      50% { transform: scale(1.3); opacity: 0; }
+    }
+
+    .pulse-circle.calm.animating {
+      animation: pulseCalmCircle 2s ease-in-out infinite;
+    }
+
+    .pulse-ring.calm.animating {
+      animation: pulseCalmRing 2s ease-in-out infinite;
+    }
+
+    .pulse-circle.energy.animating {
+      animation: pulseEnergyCircle 1s ease-in-out infinite;
+    }
+
+    .pulse-ring.energy.animating {
+      animation: pulseEnergyRing 1s ease-in-out infinite;
+    }
+
+    .session-label {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.5);
+      letter-spacing: 1px;
+    }
+
+    .stop-btn {
+      margin-top: 28px;
+      padding: 12px 36px;
+      border-radius: 30px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.08);
+      color: rgba(255, 255, 255, 0.7);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      cursor: pointer;
+      min-height: 44px;
+      min-width: 44px;
+    }
+
+    .stop-btn:active {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    /* ── Completion screen ── */
+    .completion-msg {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-weight: 300;
+      font-size: 26px;
+      color: var(--blush);
+      text-align: center;
+      line-height: 1.5;
+      margin-bottom: 32px;
+    }
+
+    .rating-label {
+      font-size: 15px;
+      color: rgba(255, 255, 255, 0.6);
+      margin-bottom: 16px;
+    }
+
+    .stars {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    .star-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: rgba(255, 255, 255, 0.4);
+      font-size: 22px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .star-btn.filled {
+      background: rgba(232, 165, 176, 0.2);
+      border-color: var(--rose);
+      color: var(--rose);
+    }
+
+    .star-btn:active {
+      transform: scale(0.92);
+    }
+
+    .submit-rating-btn {
+      padding: 14px 44px;
+      border-radius: 30px;
+      border: 1px solid var(--rose);
+      background: rgba(232, 165, 176, 0.18);
+      color: var(--blush);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      cursor: pointer;
+      min-height: 44px;
+      min-width: 44px;
+      transition: opacity 0.2s ease;
+    }
+
+    .submit-rating-btn:active {
+      opacity: 0.7;
+    }
+
+    .submit-rating-btn:disabled {
+      opacity: 0.3;
+      cursor: default;
+    }
+
+    /* ── Thank-you screen ── */
+    .thankyou-msg {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-weight: 300;
+      font-size: 24px;
+      color: var(--lavender);
+      text-align: center;
+      line-height: 1.5;
+    }
+    /* ── Exit Confirm Dialog ── */
+    .dialog-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .dialog-overlay.visible { opacity: 1; pointer-events: auto; }
+    .dialog-box {
+      background: #3a2a45;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px 24px 20px;
+      max-width: 280px;
+      width: 90%;
+      text-align: center;
+    }
+    .dialog-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-size: 20px;
+      color: var(--blush);
+      margin-bottom: 8px;
+    }
+    .dialog-msg {
+      font-size: 13px;
+      color: rgba(255,255,255,0.55);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+    .dialog-actions { display: flex; gap: 10px; }
+    .dialog-btn {
+      flex: 1;
+      padding: 12px 0;
+      min-height: 44px;
+      border-radius: 14px;
+      border: none;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .dialog-btn:active { transform: scale(0.96); }
+    .dialog-btn.cancel {
+      background: rgba(255,255,255,0.09);
+      color: rgba(255,255,255,0.7);
+      border: 1px solid rgba(255,255,255,0.14);
+    }
+    .dialog-btn.confirm-leave {
+      background: var(--rose);
+      color: var(--deep);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page-wrapper">
+    <!-- Header -->
+    <div class="header">
+      <h1>Haptic Reset</h1>
+      <button class="exit-btn" onclick="showExitDialog()">✕</button>
+    </div>
+
+    <div class="content">
+
+      <!-- Screen 1: Mode Selection -->
+      <div class="screen active" id="screenSelect">
+        <div class="mode-cards">
+          <div class="mode-card" id="cardCalm" onclick="selectMode('calm')">
+            <div class="mode-card-title">Calm Reset &#x1F4F3;</div>
+            <div class="mode-card-desc">Slow rhythmic vibration to ease anxiety and tension</div>
+          </div>
+          <div class="mode-card energy" id="cardEnergy" onclick="selectMode('energy')">
+            <div class="mode-card-title">Energy Pulse &#x26A1;</div>
+            <div class="mode-card-desc">Gentle energising pulses to lift low mood</div>
+          </div>
+        </div>
+
+        <div class="mode-detail" id="modeDetail"></div>
+
+        <button class="start-btn" id="startBtn" disabled onclick="startSession()">Begin</button>
+      </div>
+
+      <!-- Screen 2: Active Session -->
+      <div class="screen" id="screenSession">
+        <div class="timer-text" id="timerText">2:00</div>
+        <div class="pulse-container">
+          <div class="pulse-ring" id="pulseRing"></div>
+          <div class="pulse-circle" id="pulseCircle"></div>
+        </div>
+        <div class="session-label" id="sessionLabel"></div>
+        <button class="stop-btn" onclick="stopSession()">Stop early</button>
+      </div>
+
+      <!-- Screen 3: Completion + Rating -->
+      <div class="screen" id="screenComplete">
+        <div class="completion-msg">You did it.<br>Take a deep breath.</div>
+        <div class="rating-label">Did this help?</div>
+        <div class="stars" id="starsContainer"></div>
+        <button class="submit-rating-btn" id="submitRatingBtn" disabled onclick="submitRating()">Submit</button>
+      </div>
+
+      <!-- Screen 4: Thank You -->
+      <div class="screen" id="screenThanks">
+        <div class="thankyou-msg">Thank you for sharing.<br>Take care of yourself.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    var BACKEND = 'https://kira-backend-lcwr.onrender.com';
+    var USER_ID = new URLSearchParams(window.location.search).get('user') || 'user_1';
+    var canVibrate = typeof navigator.vibrate === 'function';
+
+    var selectedMode = null;   // 'calm' or 'energy'
+    var rating = 0;
+    var timerInterval = null;
+    var vibrationInterval = null;
+    var secondsLeft = 120;
+
+    // ── Mode selection ──
+    function selectMode(mode) {
+      selectedMode = mode;
+      var cardCalm = document.getElementById('cardCalm');
+      var cardEnergy = document.getElementById('cardEnergy');
+      var detail = document.getElementById('modeDetail');
+      var startBtn = document.getElementById('startBtn');
+
+      cardCalm.classList.remove('selected');
+      cardEnergy.classList.remove('selected');
+
+      if (mode === 'calm') {
+        cardCalm.classList.add('selected');
+        var html = '<p>A slow, rhythmic pattern to help calm your nervous system. Close your eyes and breathe with the rhythm.</p>';
+        if (!canVibrate) {
+          html += '<p class="ios-notice">Visual mode \u2014 follow the circle\u2019s rhythm with your breath</p>';
+        }
+        detail.innerHTML = html;
+      } else {
+        cardEnergy.classList.add('selected');
+        var html = '<p>Quick gentle pulses to help lift your energy and focus. Let the rhythm gently wake up your body.</p>';
+        if (!canVibrate) {
+          html += '<p class="ios-notice">Visual mode \u2014 follow the circle\u2019s rhythm with your breath</p>';
+        }
+        detail.innerHTML = html;
+      }
+
+      startBtn.disabled = false;
+    }
+
+    // ── Show / hide screens ──
+    function showScreen(id) {
+      var screens = document.querySelectorAll('.screen');
+      for (var i = 0; i < screens.length; i++) {
+        screens[i].classList.remove('active');
+      }
+      document.getElementById(id).classList.add('active');
+    }
+
+    // ── Start session ──
+    function startSession() {
+      if (!selectedMode) return;
+
+      secondsLeft = 120;
+      showScreen('screenSession');
+
+      var circle = document.getElementById('pulseCircle');
+      var ring = document.getElementById('pulseRing');
+      var label = document.getElementById('sessionLabel');
+
+      // Reset classes
+      circle.className = 'pulse-circle';
+      ring.className = 'pulse-ring';
+
+      // Apply mode class
+      circle.classList.add(selectedMode);
+      ring.classList.add(selectedMode);
+
+      if (selectedMode === 'calm') {
+        label.textContent = 'Calm Reset';
+      } else {
+        label.textContent = 'Energy Pulse';
+      }
+
+      updateTimerDisplay();
+
+      // Start animation
+      // Use requestAnimationFrame to ensure the class is applied before animating
+      requestAnimationFrame(function () {
+        circle.classList.add('animating');
+        ring.classList.add('animating');
+      });
+
+      // Start vibration
+      startVibration();
+
+      // Start countdown
+      timerInterval = setInterval(function () {
+        secondsLeft--;
+        updateTimerDisplay();
+        if (secondsLeft <= 0) {
+          completeSession();
+        }
+      }, 1000);
+    }
+
+    function updateTimerDisplay() {
+      var m = Math.floor(secondsLeft / 60);
+      var s = secondsLeft % 60;
+      document.getElementById('timerText').textContent = m + ':' + (s < 10 ? '0' : '') + s;
+    }
+
+    // ── Vibration ──
+    function startVibration() {
+      if (!canVibrate) return;
+
+      // Calm: vibrate([500,300,500,300,500]) = 2100ms total
+      // Energy: vibrate([200,100,200,100,200,100,200]) = 1100ms total
+      var calmPattern = [500, 300, 500, 300, 500];
+      var energyPattern = [200, 100, 200, 100, 200, 100, 200];
+
+      var pattern = selectedMode === 'calm' ? calmPattern : energyPattern;
+      var patternDuration = 0;
+      for (var i = 0; i < pattern.length; i++) patternDuration += pattern[i];
+
+      // Fire immediately
+      navigator.vibrate(pattern);
+
+      // Repeat pattern
+      vibrationInterval = setInterval(function () {
+        navigator.vibrate(pattern);
+      }, patternDuration + 200); // small gap between repeats
+    }
+
+    function stopVibration() {
+      if (vibrationInterval) {
+        clearInterval(vibrationInterval);
+        vibrationInterval = null;
+      }
+      if (canVibrate) {
+        navigator.vibrate(0);
+      }
+    }
+
+    // ── Stop / complete ──
+    function stopSession() {
+      clearInterval(timerInterval);
+      timerInterval = null;
+      stopVibration();
+
+      var circle = document.getElementById('pulseCircle');
+      var ring = document.getElementById('pulseRing');
+      circle.classList.remove('animating');
+      ring.classList.remove('animating');
+
+      showCompletionScreen();
+    }
+
+    function completeSession() {
+      clearInterval(timerInterval);
+      timerInterval = null;
+      stopVibration();
+
+      var circle = document.getElementById('pulseCircle');
+      var ring = document.getElementById('pulseRing');
+      circle.classList.remove('animating');
+      ring.classList.remove('animating');
+
+      showCompletionScreen();
+    }
+
+    function showCompletionScreen() {
+      rating = 0;
+      buildStars();
+      document.getElementById('submitRatingBtn').disabled = true;
+      showScreen('screenComplete');
+    }
+
+    // ── Rating stars ──
+    function buildStars() {
+      var container = document.getElementById('starsContainer');
+      container.innerHTML = '';
+      for (var i = 1; i <= 5; i++) {
+        var btn = document.createElement('button');
+        btn.className = 'star-btn';
+        btn.textContent = '\u2605';
+        btn.setAttribute('data-value', i);
+        btn.addEventListener('click', function () {
+          setRating(parseInt(this.getAttribute('data-value')));
+        });
+        container.appendChild(btn);
+      }
+    }
+
+    function setRating(value) {
+      rating = value;
+      var btns = document.querySelectorAll('.star-btn');
+      for (var i = 0; i < btns.length; i++) {
+        if (parseInt(btns[i].getAttribute('data-value')) <= value) {
+          btns[i].classList.add('filled');
+        } else {
+          btns[i].classList.remove('filled');
+        }
+      }
+      document.getElementById('submitRatingBtn').disabled = false;
+    }
+
+    // ── Submit rating ──
+    function submitRating() {
+      if (rating === 0) return;
+
+      var interventionId = selectedMode === 'calm' ? 'haptic_calm' : 'haptic_energise';
+      var interventionName = selectedMode === 'calm' ? 'Calm Reset' : 'Energy Pulse';
+
+      var payload = {
+        intervention_id: interventionId,
+        intervention_name: interventionName,
+        intervention_type: 'haptic',
+        rating: rating,
+        phase: 'unknown',
+        cycle_day: 0,
+        duration_seconds: 120,
+        user_id: USER_ID
+      };
+
+      document.getElementById('submitRatingBtn').disabled = true;
+
+      fetch(BACKEND + '/rate_intervention', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).then(function () {
+        showThanks();
+      }).catch(function () {
+        // Still allow exit on error
+        showThanks();
+      });
+    }
+
+    function showThanks() {
+      showScreen('screenThanks');
+      setTimeout(function () {
+        window.AppInventor.setWebViewString('navigate:back');
+      }, 2200);
+    }
+
+    // ── Exit ──
+    function showExitDialog() {
+      document.getElementById('exitDialog').classList.add('visible');
+    }
+    function hideExitDialog() {
+      document.getElementById('exitDialog').classList.remove('visible');
+    }
+    function doExit() {
+      stopVibration();
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+      window.AppInventor.setWebViewString('navigate:back');
+    }
+  </script>
+
+  <!-- Exit Confirm Dialog -->
+  <div class="dialog-overlay" id="exitDialog">
+    <div class="dialog-box">
+      <div class="dialog-title">Leave exercise?</div>
+      <div class="dialog-msg">Your progress won't be saved.</div>
+      <div class="dialog-actions">
+        <button class="dialog-btn cancel" onclick="hideExitDialog()">Stay</button>
+        <button class="dialog-btn confirm-leave" onclick="doExit()">Leave</button>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>

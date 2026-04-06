@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Kira — Urge Surfing</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --rose: #e8a5b0;
+      --blush: #f2c4ce;
+      --lavender: #c9b8e8;
+      --deep: #2d1f35;
+      --card: rgba(255, 255, 255, 0.09);
+      --border: rgba(255, 255, 255, 0.14);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+      height: 100%;
+      background: var(--deep);
+      font-family: 'DM Sans', sans-serif;
+      color: white;
+      overflow: hidden;
+      position: fixed;
+      width: 100%;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -30%;
+      left: -20%;
+      width: 70%;
+      height: 70%;
+      background: radial-gradient(circle, rgba(201, 184, 232, 0.22) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      bottom: -20%;
+      right: -20%;
+      width: 60%;
+      height: 60%;
+      background: radial-gradient(circle, rgba(232, 165, 176, 0.18) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page-wrapper {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      height: 100dvh;
+      position: relative;
+      z-index: 1;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px 20px 12px;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .header-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-weight: 300;
+      font-size: 24px;
+      color: var(--blush);
+      letter-spacing: 0.5px;
+    }
+
+    .exit-btn {
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 20px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .exit-btn:active {
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+    }
+
+    /* ── Content Area ── */
+    .content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 0 24px 24px;
+    }
+
+    /* ── Explanation Card ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      width: 100%;
+      max-width: 380px;
+    }
+
+    .card p {
+      font-size: 14px;
+      line-height: 1.65;
+      color: rgba(255, 255, 255, 0.75);
+      font-weight: 300;
+    }
+
+    /* ── Duration Picker ── */
+    .duration-picker {
+      display: flex;
+      gap: 12px;
+      margin: 24px 0 20px;
+    }
+
+    .pill-btn {
+      padding: 12px 28px;
+      border-radius: 28px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: rgba(255, 255, 255, 0.7);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 400;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      min-width: 44px;
+      min-height: 44px;
+    }
+
+    .pill-btn.active {
+      background: linear-gradient(135deg, var(--lavender), var(--rose));
+      color: var(--deep);
+      border-color: transparent;
+      font-weight: 500;
+    }
+
+    .pill-btn:active {
+      transform: scale(0.96);
+    }
+
+    /* ── Start Button ── */
+    .start-btn {
+      width: 100%;
+      max-width: 280px;
+      padding: 16px;
+      border: none;
+      border-radius: 28px;
+      background: linear-gradient(135deg, var(--lavender), var(--rose));
+      color: var(--deep);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      transition: transform 0.2s, opacity 0.2s;
+      min-height: 52px;
+      margin-top: 8px;
+    }
+
+    .start-btn:active {
+      transform: scale(0.97);
+      opacity: 0.9;
+    }
+
+    /* ── Wave Animation ── */
+    .wave-container {
+      width: 100%;
+      max-width: 380px;
+      height: 160px;
+      position: relative;
+      margin: 20px 0 8px;
+      overflow: hidden;
+      border-radius: 16px;
+    }
+
+    .wave-svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .wave-path {
+      transition: d 2s ease-in-out;
+    }
+
+    /* ── Timer Display ── */
+    .timer-display {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 72px;
+      font-weight: 300;
+      letter-spacing: 4px;
+      color: var(--blush);
+      margin: 8px 0;
+      text-align: center;
+      line-height: 1;
+    }
+
+    .timer-label {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.45);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    /* ── Mindfulness Prompt ── */
+    .mindfulness-prompt {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-size: 18px;
+      color: var(--lavender);
+      text-align: center;
+      line-height: 1.5;
+      padding: 0 12px;
+      min-height: 54px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 1;
+      transition: opacity 0.8s ease;
+    }
+
+    .mindfulness-prompt.fading {
+      opacity: 0;
+    }
+
+    /* ── Craving Check-in Overlay ── */
+    .checkin-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(45, 31, 53, 0.85);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    }
+
+    .checkin-overlay.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .checkin-card {
+      background: rgba(60, 45, 70, 0.95);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px 28px;
+      text-align: center;
+      max-width: 320px;
+      width: 90%;
+      transform: scale(0.92);
+      transition: transform 0.4s ease;
+    }
+
+    .checkin-overlay.visible .checkin-card {
+      transform: scale(1);
+    }
+
+    .checkin-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-size: 20px;
+      color: var(--blush);
+      margin-bottom: 20px;
+    }
+
+    .intensity-scale {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .intensity-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: rgba(255, 255, 255, 0.7);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .intensity-btn:active,
+    .intensity-btn.selected {
+      background: linear-gradient(135deg, var(--lavender), var(--rose));
+      color: var(--deep);
+      border-color: transparent;
+      transform: scale(1.1);
+    }
+
+    .checkin-dismiss {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.35);
+      margin-top: 16px;
+    }
+
+    /* ── Completion Screen ── */
+    .completion-screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 40px 24px;
+      flex: 1;
+    }
+
+    .completion-screen.visible {
+      display: flex;
+    }
+
+    .completion-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-size: 32px;
+      color: var(--blush);
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+
+    .completion-sub {
+      font-size: 15px;
+      color: rgba(255, 255, 255, 0.55);
+      font-weight: 300;
+      margin-bottom: 40px;
+    }
+
+    /* ── Celebration particles ── */
+    .particles-container {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 50;
+      overflow: hidden;
+    }
+
+    .particle {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      opacity: 0;
+      animation: particleFloat 3s ease-out forwards;
+    }
+
+    @keyframes particleFloat {
+      0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(-200px) scale(0);
+      }
+    }
+
+    /* ── Rating Section ── */
+    .rating-section {
+      margin-top: 8px;
+    }
+
+    .rating-question {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-size: 20px;
+      color: var(--lavender);
+      margin-bottom: 20px;
+    }
+
+    .stars-row {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    .star-btn {
+      width: 48px;
+      height: 48px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 32px;
+      transition: transform 0.2s ease;
+      color: rgba(255, 255, 255, 0.25);
+      line-height: 1;
+    }
+
+    .star-btn.filled {
+      color: var(--rose);
+    }
+
+    .star-btn:active {
+      transform: scale(1.25);
+    }
+
+    /* ── Thank You ── */
+    .thank-you {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+    }
+
+    .thank-you.visible {
+      display: flex;
+    }
+
+    .thank-you-text {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-size: 28px;
+      color: var(--blush);
+      opacity: 0;
+      animation: fadeUp 0.8s ease forwards;
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* ── Error Toast ── */
+    .error-toast {
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(60, 45, 70, 0.95);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 24px;
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.7);
+      z-index: 200;
+      opacity: 0;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      pointer-events: none;
+    }
+
+    .error-toast.visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ── Confirm Dialog ── */
+    .confirm-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 150;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+
+    .confirm-overlay.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .confirm-card {
+      background: #3a2a45;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px 24px 20px;
+      text-align: center;
+      max-width: 280px;
+      width: 90%;
+    }
+
+    .confirm-text {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-size: 20px;
+      color: var(--blush);
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+
+    .confirm-msg {
+      font-size: 13px;
+      color: rgba(255,255,255,0.55);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .confirm-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .confirm-btn {
+      flex: 1;
+      padding: 12px 0;
+      min-height: 44px;
+      border-radius: 14px;
+      border: none;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .confirm-btn:active {
+      transform: scale(0.96);
+    }
+
+    .confirm-stay {
+      background: rgba(255,255,255,0.09);
+      color: rgba(255,255,255,0.7);
+      border: 1px solid rgba(255,255,255,0.14);
+    }
+
+    .confirm-leave {
+      background: var(--rose);
+      color: var(--deep);
+    }
+
+    /* ── Screen transitions ── */
+    .screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    /* ── Utility ── */
+    .fade-in {
+      animation: fadeUp 0.6s ease forwards;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page-wrapper">
+
+    <!-- Header -->
+    <div class="header">
+      <span class="header-title">Urge Surfing</span>
+      <button class="exit-btn" onclick="confirmExit()" aria-label="Exit">&#10005;</button>
+    </div>
+
+    <!-- ===== START SCREEN ===== -->
+    <div class="content screen active" id="startScreen">
+      <div class="card" style="margin-top:8px">
+        <p>Cravings peak and pass like waves. This timer helps you ride it out without acting on it. Most cravings pass within 15 minutes.</p>
+      </div>
+
+      <div class="duration-picker">
+        <button class="pill-btn" id="btn5" onclick="pickDuration(5)">5 min</button>
+        <button class="pill-btn active" id="btn15" onclick="pickDuration(15)">15 min</button>
+      </div>
+
+      <button class="start-btn" onclick="startTimer()">Begin Surfing</button>
+    </div>
+
+    <!-- ===== TIMER SCREEN ===== -->
+    <div class="content screen" id="timerScreen">
+
+      <!-- Wave Animation -->
+      <div class="wave-container">
+        <svg class="wave-svg" viewBox="0 0 400 160" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="waveGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="var(--lavender)" stop-opacity="0.6"/>
+              <stop offset="100%" stop-color="var(--rose)" stop-opacity="0.6"/>
+            </linearGradient>
+            <linearGradient id="waveGrad2" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="var(--rose)" stop-opacity="0.3"/>
+              <stop offset="100%" stop-color="var(--lavender)" stop-opacity="0.3"/>
+            </linearGradient>
+          </defs>
+          <path id="wave1" fill="url(#waveGrad)" d="M0,120 C100,120 300,120 400,120 L400,160 L0,160 Z"/>
+          <path id="wave2" fill="url(#waveGrad2)" d="M0,130 C100,130 300,130 400,130 L400,160 L0,160 Z"/>
+        </svg>
+      </div>
+
+      <!-- Timer -->
+      <div class="timer-display" id="timerDisplay">15:00</div>
+      <div class="timer-label">remaining</div>
+
+      <!-- Mindfulness Prompt -->
+      <div class="mindfulness-prompt" id="mindfulnessPrompt">Notice the craving without judging it</div>
+    </div>
+
+    <!-- ===== COMPLETION SCREEN ===== -->
+    <div class="content screen" id="completionScreen">
+      <div class="completion-screen visible">
+        <div class="completion-title fade-in">You did it.</div>
+        <div class="completion-sub fade-in" style="animation-delay:0.3s">The wave passed.</div>
+
+        <div class="rating-section fade-in" style="animation-delay:0.7s">
+          <div class="rating-question">Did urge surfing help?</div>
+          <div class="stars-row" id="starsRow">
+            <button class="star-btn" data-star="1" onclick="selectRating(1)">&#9733;</button>
+            <button class="star-btn" data-star="2" onclick="selectRating(2)">&#9733;</button>
+            <button class="star-btn" data-star="3" onclick="selectRating(3)">&#9733;</button>
+            <button class="star-btn" data-star="4" onclick="selectRating(4)">&#9733;</button>
+            <button class="star-btn" data-star="5" onclick="selectRating(5)">&#9733;</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== THANK YOU SCREEN ===== -->
+    <div class="content screen" id="thankYouScreen">
+      <div class="thank-you visible">
+        <div class="thank-you-text">Thank you</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Craving Check-in Overlay -->
+  <div class="checkin-overlay" id="checkinOverlay">
+    <div class="checkin-card">
+      <div class="checkin-title">How intense is the craving now?</div>
+      <div class="intensity-scale">
+        <button class="intensity-btn" onclick="answerCheckin(1)">1</button>
+        <button class="intensity-btn" onclick="answerCheckin(2)">2</button>
+        <button class="intensity-btn" onclick="answerCheckin(3)">3</button>
+        <button class="intensity-btn" onclick="answerCheckin(4)">4</button>
+        <button class="intensity-btn" onclick="answerCheckin(5)">5</button>
+      </div>
+      <div class="checkin-dismiss">Dismisses automatically</div>
+    </div>
+  </div>
+
+  <!-- Confirm Exit Dialog -->
+  <div class="confirm-overlay" id="confirmOverlay">
+    <div class="confirm-card">
+      <div class="confirm-text">Leave exercise?</div>
+      <div class="confirm-msg">Your progress won't be saved.</div>
+      <div class="confirm-actions">
+        <button class="confirm-btn confirm-stay" onclick="closeConfirm()">Stay</button>
+        <button class="confirm-btn confirm-leave" onclick="doExit()">Leave</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Celebration Particles -->
+  <div class="particles-container" id="particlesContainer"></div>
+
+  <!-- Error Toast -->
+  <div class="error-toast" id="errorToast">Something went wrong, but you can still exit.</div>
+
+  <script>
+    var BACKEND = 'https://kira-backend-lcwr.onrender.com';
+    var USER_ID = new URLSearchParams(window.location.search).get('user') || 'user_1';
+
+    /* ── State ── */
+    var chosenMinutes = 15;
+    var totalSeconds = 900;
+    var remainingSeconds = 900;
+    var timerInterval = null;
+    var waveFrame = null;
+    var promptIndex = 0;
+    var promptInterval = null;
+    var checkinTimeout = null;
+    var startTimestamp = 0;
+
+    var prompts = [
+      'Notice the craving without judging it',
+      'You are not your craving \u2014 you are the one watching it',
+      'This feeling is temporary. It will pass.',
+      'What does the craving feel like in your body right now?',
+      'You have surfed this wave before'
+    ];
+
+    /* ── Duration Picker ── */
+    function pickDuration(min) {
+      chosenMinutes = min;
+      totalSeconds = min * 60;
+      remainingSeconds = totalSeconds;
+
+      document.getElementById('btn5').classList.toggle('active', min === 5);
+      document.getElementById('btn15').classList.toggle('active', min === 15);
+      document.getElementById('timerDisplay').textContent = formatTime(remainingSeconds);
+    }
+
+    function formatTime(s) {
+      var m = Math.floor(s / 60);
+      var sec = s % 60;
+      return (m < 10 ? '0' : '') + m + ':' + (sec < 10 ? '0' : '') + sec;
+    }
+
+    /* ── Start Timer ── */
+    function startTimer() {
+      showScreen('timerScreen');
+      startTimestamp = Date.now();
+      remainingSeconds = totalSeconds;
+      document.getElementById('timerDisplay').textContent = formatTime(remainingSeconds);
+
+      // Start countdown
+      timerInterval = setInterval(tick, 1000);
+
+      // Start wave animation
+      animateWave();
+
+      // Start mindfulness prompts
+      promptIndex = 0;
+      document.getElementById('mindfulnessPrompt').textContent = prompts[0];
+      promptInterval = setInterval(rotatePrompt, 120000); // every 2 minutes
+    }
+
+    function tick() {
+      remainingSeconds--;
+      document.getElementById('timerDisplay').textContent = formatTime(remainingSeconds);
+
+      // Check-in triggers: at 5 min elapsed (10:00 remaining) and 10 min elapsed (5:00 remaining)
+      if (chosenMinutes === 15) {
+        if (remainingSeconds === 600 || remainingSeconds === 300) {
+          showCheckin();
+        }
+      }
+
+      if (remainingSeconds <= 0) {
+        clearInterval(timerInterval);
+        clearInterval(promptInterval);
+        cancelAnimationFrame(waveFrame);
+        onComplete();
+      }
+    }
+
+    /* ── Wave Animation ── */
+    function animateWave() {
+      var wave1 = document.getElementById('wave1');
+      var wave2 = document.getElementById('wave2');
+      var startTime = Date.now();
+
+      function frame() {
+        var elapsed = (Date.now() - startTime) / 1000;
+        var progress = Math.min(elapsed / totalSeconds, 1);
+
+        // Intensity curve: peaks around 0.47-0.53 of duration (7-8 min of 15)
+        var intensity = Math.sin(progress * Math.PI);
+        // Wave height: 120 = baseline (low), 40 = peak (high wave)
+        var baseY = 120 - intensity * 80;
+
+        var t = elapsed * 0.8; // animation speed
+        var a1 = Math.sin(t) * 20 * (0.3 + intensity * 0.7);
+        var a2 = Math.cos(t * 0.7) * 15 * (0.3 + intensity * 0.7);
+        var a3 = Math.sin(t * 1.3) * 18 * (0.3 + intensity * 0.7);
+
+        var y1 = baseY + a1;
+        var y2 = baseY + a2;
+        var y3 = baseY + a3;
+        var y4 = baseY - a1 * 0.5;
+
+        wave1.setAttribute('d',
+          'M0,' + y1 + ' C100,' + y2 + ' 300,' + y3 + ' 400,' + y4 + ' L400,160 L0,160 Z'
+        );
+
+        var b1 = baseY + 10 + Math.cos(t * 0.9) * 12 * (0.3 + intensity * 0.7);
+        var b2 = baseY + 10 + Math.sin(t * 0.6) * 10 * (0.3 + intensity * 0.7);
+        var b3 = baseY + 10 + Math.cos(t * 1.1) * 14 * (0.3 + intensity * 0.7);
+        var b4 = baseY + 10 - Math.sin(t * 0.8) * 8 * (0.3 + intensity * 0.7);
+
+        wave2.setAttribute('d',
+          'M0,' + b1 + ' C100,' + b2 + ' 300,' + b3 + ' 400,' + b4 + ' L400,160 L0,160 Z'
+        );
+
+        waveFrame = requestAnimationFrame(frame);
+      }
+
+      waveFrame = requestAnimationFrame(frame);
+    }
+
+    /* ── Mindfulness Prompts ── */
+    function rotatePrompt() {
+      var el = document.getElementById('mindfulnessPrompt');
+      el.classList.add('fading');
+      setTimeout(function () {
+        promptIndex = (promptIndex + 1) % prompts.length;
+        el.textContent = prompts[promptIndex];
+        el.classList.remove('fading');
+      }, 800);
+    }
+
+    /* ── Craving Check-in ── */
+    function showCheckin() {
+      var overlay = document.getElementById('checkinOverlay');
+      overlay.classList.add('visible');
+
+      // Auto-dismiss after 10 seconds
+      checkinTimeout = setTimeout(function () {
+        dismissCheckin();
+      }, 10000);
+    }
+
+    function answerCheckin(level) {
+      clearTimeout(checkinTimeout);
+      // Brief highlight
+      var btns = document.querySelectorAll('.intensity-btn');
+      btns.forEach(function (b) { b.classList.remove('selected'); });
+      document.querySelector('.intensity-btn:nth-child(' + level + ')').classList.add('selected');
+
+      setTimeout(function () {
+        dismissCheckin();
+      }, 600);
+    }
+
+    function dismissCheckin() {
+      document.getElementById('checkinOverlay').classList.remove('visible');
+      // Reset selections
+      document.querySelectorAll('.intensity-btn').forEach(function (b) {
+        b.classList.remove('selected');
+      });
+    }
+
+    /* ── Completion ── */
+    function onComplete() {
+      showScreen('completionScreen');
+      spawnParticles();
+    }
+
+    function spawnParticles() {
+      var container = document.getElementById('particlesContainer');
+      var colors = ['var(--lavender)', 'var(--rose)', 'var(--blush)', 'rgba(255,255,255,0.5)'];
+
+      for (var i = 0; i < 30; i++) {
+        (function (index) {
+          setTimeout(function () {
+            var p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = (10 + Math.random() * 80) + '%';
+            p.style.bottom = '20%';
+            p.style.background = colors[index % colors.length];
+            p.style.width = (4 + Math.random() * 8) + 'px';
+            p.style.height = p.style.width;
+            p.style.animationDelay = (Math.random() * 0.5) + 's';
+            p.style.animationDuration = (2 + Math.random() * 2) + 's';
+            container.appendChild(p);
+
+            setTimeout(function () {
+              if (p.parentNode) p.parentNode.removeChild(p);
+            }, 4500);
+          }, index * 60);
+        })(i);
+      }
+    }
+
+    /* ── Rating ── */
+    function selectRating(n) {
+      // Fill stars up to n
+      var btns = document.querySelectorAll('.star-btn');
+      btns.forEach(function (btn) {
+        var s = parseInt(btn.getAttribute('data-star'));
+        btn.classList.toggle('filled', s <= n);
+      });
+
+      // Disable further taps
+      btns.forEach(function (btn) {
+        btn.onclick = null;
+        btn.style.pointerEvents = 'none';
+      });
+
+      var actualSeconds = Math.round((Date.now() - startTimestamp) / 1000);
+
+      var interventionId = chosenMinutes === 5 ? 'urge_surf_5' : 'urge_surf_15';
+      var interventionName = chosenMinutes === 5 ? '5-Minute Urge Surf' : 'Deep Urge Surf';
+
+      var body = {
+        intervention_id: interventionId,
+        intervention_name: interventionName,
+        intervention_type: 'urge_surfing',
+        rating: n,
+        phase: 'unknown',
+        cycle_day: 0,
+        duration_seconds: actualSeconds,
+        user_id: USER_ID
+      };
+
+      // POST rating
+      fetch(BACKEND + '/rate_intervention', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      })
+        .then(function (res) {
+          if (!res.ok) throw new Error('Server error');
+          showThankYou();
+        })
+        .catch(function () {
+          showToast();
+          // Still allow exit after a pause
+          setTimeout(showThankYou, 2000);
+        });
+    }
+
+    function showToast() {
+      var toast = document.getElementById('errorToast');
+      toast.classList.add('visible');
+      setTimeout(function () {
+        toast.classList.remove('visible');
+      }, 3000);
+    }
+
+    function showThankYou() {
+      showScreen('thankYouScreen');
+      setTimeout(function () {
+        window.AppInventor.setWebViewString('navigate:back');
+      }, 1800);
+    }
+
+    /* ── Screen Management ── */
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(function (s) {
+        s.classList.remove('active');
+      });
+      document.getElementById(id).classList.add('active');
+    }
+
+    /* ── Exit Confirm ── */
+    function confirmExit() {
+      document.getElementById('confirmOverlay').classList.add('visible');
+    }
+
+    function closeConfirm() {
+      document.getElementById('confirmOverlay').classList.remove('visible');
+    }
+
+    function doExit() {
+      clearInterval(timerInterval);
+      clearInterval(promptInterval);
+      if (waveFrame) cancelAnimationFrame(waveFrame);
+      window.AppInventor.setWebViewString('navigate:back');
+    }
+  </script>
+</body>
+
+</html>
