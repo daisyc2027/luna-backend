@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from openai import OpenAI
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
-import os, json
+import os, json, hashlib, secrets
 import firebase_admin
 from firebase_admin import credentials, firestore
 from flask_cors import CORS
@@ -613,6 +613,95 @@ def clear_chat():
         doc.reference.delete()
     return jsonify({"message": "Chat cleared"})
 
+# ─── Authentication ─────────────────────────────────────────
+
+def hash_password(password, salt=None):
+    if salt is None:
+        salt = secrets.token_hex(16)
+    hashed = hashlib.sha256((salt + password).encode()).hexdigest()
+    return salt, hashed
+
+@app.route('/signup', methods=['POST'])
+def signup():
+    data = request.get_json(force=True)
+    if isinstance(data, list):
+        data = {item[0]: item[1] for item in data}
+
+    username = data.get('username', '').strip().lower()
+    password = data.get('password', '')
+
+    # Validate username
+    if not username or len(username) < 3:
+        return jsonify({"error": "Username must be at least 3 characters"}), 400
+    if len(username) > 20:
+        return jsonify({"error": "Username must be 20 characters or fewer"}), 400
+    if not username.isalnum() and '_' not in username:
+        return jsonify({"error": "Username can only contain letters, numbers, and underscores"}), 400
+
+    # Validate password
+    if len(password) < 8:
+        return jsonify({"error": "Password must be at least 8 characters"}), 400
+
+    # Check if username already taken
+    existing = db.collection('accounts').document(username).get()
+    if existing.exists:
+        return jsonify({"error": "Username already taken"}), 409
+
+    # Create account
+    salt, hashed = hash_password(password)
+    db.collection('accounts').document(username).set({
+        'username': username,
+        'password_hash': hashed,
+        'salt': salt,
+        'created_at': datetime.now().strftime("%Y-%m-%d %H:%M")
+    })
+
+    # Create user profile document
+    db.collection('users').document(username).set({
+        'username': username,
+        'onboarding_complete': False
+    })
+
+    return jsonify({"status": "ok", "username": username, "user_id": username})
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json(force=True)
+    if isinstance(data, list):
+        data = {item[0]: item[1] for item in data}
+
+    username = data.get('username', '').strip().lower()
+    password = data.get('password', '')
+
+    if not username or not password:
+        return jsonify({"error": "Username and password are required"}), 400
+
+    # Look up account
+    account = db.collection('accounts').document(username).get()
+    if not account.exists:
+        return jsonify({"error": "Invalid username or password"}), 401
+
+    account_data = account.to_dict()
+    salt = account_data.get('salt', '')
+    stored_hash = account_data.get('password_hash', '')
+
+    # Verify password
+    _, check_hash = hash_password(password, salt)
+    if check_hash != stored_hash:
+        return jsonify({"error": "Invalid username or password"}), 401
+
+    # Check if onboarding is complete
+    user_doc = db.collection('users').document(username).get()
+    user_data = user_doc.to_dict() if user_doc.exists else {}
+    onboarding_complete = user_data.get('onboarding_complete', False)
+
+    return jsonify({
+        "status": "ok",
+        "username": username,
+        "user_id": username,
+        "onboarding_complete": onboarding_complete
+    })
+
 @app.route('/save_onboarding', methods=['POST'])
 def save_onboarding():
     data = request.get_json(force=True)
@@ -625,7 +714,9 @@ def save_onboarding():
     cycle_length = data.get('cycle_length', 28)
     current_moods = data.get('current_moods', [])
 
-    db.collection('users').document('user_1').set({
+    user_id = data.get('user_id', 'user_1')
+
+    db.collection('users').document(user_id).set({
         'name': name,
         'age': age,
         'last_period_date': last_period_date,
@@ -652,8 +743,7 @@ INTERVENTION_LIBRARY = {
         {"id": "haptic_energise", "name": "Energy Pulse", "description": "Gentle tapping pattern to lift low mood and energy", "duration": "2 min", "best_for": ["low_motivation", "tired"], "icon": "\u26a1"}
     ],
     "grounding": [
-        {"id": "54321", "name": "5-4-3-2-1 Grounding", "description": "Use your senses to anchor yourself to the present moment", "duration": "3 min", "best_for": ["anxiety", "rumination", "overwhelmed"], "icon": "\U0001f33f"},
-        {"id": "body_scan", "name": "Body Scan", "description": "A gentle scan from head to toe to release physical tension", "duration": "5 min", "best_for": ["stress", "anxiety", "low_motivation"], "icon": "\u2728"}
+        {"id": "54321", "name": "5-4-3-2-1 Grounding", "description": "Use your senses to anchor yourself to the present moment", "duration": "3 min", "best_for": ["anxiety", "rumination", "overwhelmed"], "icon": "\U0001f33f"}
     ],
     "cognitive": [
         {"id": "self_compassion", "name": "Self-Compassion Script", "description": "A guided script to soften self-criticism during difficult moments", "duration": "3 min", "best_for": ["shame", "rumination", "irritability"], "icon": "\U0001f49c"},
