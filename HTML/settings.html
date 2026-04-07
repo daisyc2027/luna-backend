@@ -634,7 +634,10 @@
 
   <script>
     var BACKEND_URL = 'https://kira-backend-lcwr.onrender.com';
-    var userId = new URLSearchParams(window.location.search).get('user') || 'user_1';
+    var userId = (function() {
+      try { var ws = window.AppInventor.getWebViewString(); if (ws && ws.indexOf('user:') === 0) return ws.split(':')[1]; } catch(e) {}
+      return localStorage.getItem('kira_user') || 'user_1';
+    })();
     var userData = {};
 
     // ── Loading screen ──
@@ -792,10 +795,17 @@
     var currentTheme = localStorage.getItem('kira_theme') || 'default';
     updateThemeUI();
 
+    var themeColors = {
+      'default': '#2d1f35',
+      'midnight': '#1a1a2e',
+      'warm': '#2d2025'
+    };
+
     function selectTheme(theme) {
       currentTheme = theme;
       localStorage.setItem('kira_theme', theme);
       updateThemeUI();
+      applyTheme(theme);
     }
 
     function updateThemeUI() {
@@ -808,6 +818,14 @@
         }
       });
     }
+
+    function applyTheme(theme) {
+      var color = themeColors[theme] || themeColors['default'];
+      document.documentElement.style.setProperty('--deep', color);
+    }
+
+    // Apply saved theme on load
+    applyTheme(currentTheme);
 
     // ── Dialogs ──
     function showLogoutDialog() {

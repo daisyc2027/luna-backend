@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Kira — Nutrition</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --rose: #e8a5b0;
+      --blush: #f2c4ce;
+      --lavender: #c9b8e8;
+      --deep: #2d1f35;
+      --card: rgba(255,255,255,0.09);
+      --border: rgba(255,255,255,0.14);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    html {
+      height: 100%;
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: var(--deep);
+      font-family: 'DM Sans', sans-serif;
+      color: white;
+      touch-action: none;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -30%; left: -20%;
+      width: 70%; height: 70%;
+      background: radial-gradient(circle, rgba(201,184,232,0.22) 0%, transparent 70%);
+      pointer-events: none; z-index: 0;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      bottom: -20%; right: -20%;
+      width: 60%; height: 60%;
+      background: radial-gradient(circle, rgba(232,165,176,0.18) 0%, transparent 70%);
+      pointer-events: none; z-index: 0;
+    }
+
+    /* Loading screen */
+    .loading-screen {
+      position: fixed;
+      inset: 0;
+      background: var(--deep);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      transition: opacity 0.5s ease;
+    }
+
+    .loading-screen.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .loading-avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--lavender), var(--rose));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      animation: pulse 1.8s ease-in-out infinite;
+      box-shadow: 0 0 30px rgba(201,184,232,0.3);
+    }
+
+    .loading-text {
+      margin-top: 16px;
+      font-size: 13px;
+      color: rgba(255,255,255,0.4);
+      letter-spacing: 2px;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.08); opacity: 0.7; }
+    }
+
+    /* Page wrapper */
+    .page-wrapper {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100vh;
+      height: 100dvh;
+      position: relative;
+      z-index: 1;
+      overflow: hidden;
+    }
+
+    /* Header */
+    .header {
+      padding: 52px 20px 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-shrink: 0;
+      max-width: 420px;
+      width: 100%;
+      margin: 0 auto;
+      background: rgba(45,31,53,0.92);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      touch-action: none;
+    }
+
+    .back-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: rgba(255,255,255,0.6);
+      cursor: pointer;
+      flex-shrink: 0;
+      backdrop-filter: blur(10px);
+      transition: transform 0.15s;
+    }
+
+    .back-btn:active { transform: scale(0.92); }
+
+    .header-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px;
+      font-weight: 300;
+      font-style: italic;
+      color: white;
+      line-height: 1;
+      flex: 1;
+      text-align: center;
+    }
+
+    .header-spacer {
+      width: 44px;
+      flex-shrink: 0;
+    }
+
+    /* Scrollable container */
+    .container {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-y;
+      overscroll-behavior: contain;
+      padding: 0 20px 40px;
+      max-width: 420px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* Animations */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .fade-up {
+      opacity: 0;
+      animation: fadeUp 0.4s ease both;
+    }
+
+    /* Phase context banner */
+    .phase-banner {
+      background: linear-gradient(135deg, rgba(74,53,88,0.85), rgba(45,31,53,0.9));
+      border: 1px solid rgba(201,184,232,0.25);
+      border-radius: 20px;
+      padding: 18px 20px;
+      margin-top: 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      backdrop-filter: blur(20px);
+      animation: fadeUp 0.4s ease both;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .phase-banner::after {
+      content: '';
+      position: absolute;
+      top: -30px; right: -30px;
+      width: 100px; height: 100px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(201,184,232,0.15), transparent 70%);
+      pointer-events: none;
+    }
+
+    .phase-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--lavender), var(--rose));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+      flex-shrink: 0;
+    }
+
+    .phase-info { flex: 1; }
+
+    .phase-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: white;
+      text-transform: capitalize;
+      margin-bottom: 4px;
+    }
+
+    .phase-message {
+      font-size: 13px;
+      font-weight: 300;
+      color: rgba(255,255,255,0.6);
+      line-height: 1.5;
+      font-style: italic;
+    }
+
+    /* Section labels */
+    .section-label {
+      font-size: 14px;
+      font-weight: 400;
+      color: rgba(255,255,255,0.7);
+      margin-top: 24px;
+      margin-bottom: 12px;
+      animation: fadeUp 0.4s ease both;
+    }
+
+    /* Craving chips */
+    .chip-scroll {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 8px;
+      scrollbar-width: none;
+      animation: fadeUp 0.4s ease both;
+      animation-delay: 0.05s;
+    }
+
+    .chip-scroll::-webkit-scrollbar { display: none; }
+
+    .chip {
+      flex-shrink: 0;
+      height: 44px;
+      padding: 0 18px;
+      border-radius: 22px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: rgba(255,255,255,0.75);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 400;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
+      white-space: nowrap;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .chip:active { transform: scale(0.95); }
+
+    .chip.selected {
+      background: rgba(201,184,232,0.25);
+      border-color: rgba(201,184,232,0.4);
+      color: white;
+    }
+
+    .chip.add-own {
+      border-style: dashed;
+      color: rgba(255,255,255,0.45);
+    }
+
+    /* Custom craving input */
+    .custom-input-row {
+      display: none;
+      gap: 10px;
+      margin-top: 10px;
+      animation: fadeUp 0.3s ease both;
+    }
+
+    .custom-input-row.visible { display: flex; }
+
+    .custom-input {
+      flex: 1;
+      height: 44px;
+      padding: 0 16px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      color: white;
+      outline: none;
+      -webkit-appearance: none;
+      transition: border-color 0.2s;
+    }
+
+    .custom-input::placeholder { color: rgba(255,255,255,0.3); }
+    .custom-input:focus { border-color: rgba(201,184,232,0.4); }
+
+    .custom-add-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: rgba(201,184,232,0.2);
+      border: 1px solid rgba(201,184,232,0.3);
+      color: var(--lavender);
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.15s;
+      flex-shrink: 0;
+    }
+
+    .custom-add-btn:active { transform: scale(0.92); }
+
+    /* Selected tags */
+    .selected-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+      min-height: 0;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 16px;
+      background: rgba(201,184,232,0.15);
+      border: 1px solid rgba(201,184,232,0.25);
+      font-size: 13px;
+      color: var(--lavender);
+      cursor: pointer;
+      transition: transform 0.15s, opacity 0.2s;
+      animation: fadeUp 0.25s ease both;
+    }
+
+    .tag:active { transform: scale(0.92); }
+
+    .tag-remove {
+      font-size: 11px;
+      opacity: 0.5;
+    }
+
+    /* Text input */
+    .ate-textarea {
+      width: 100%;
+      min-height: 50px;
+      max-height: 140px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 16px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 300;
+      line-height: 1.5;
+      color: white;
+      resize: none;
+      outline: none;
+      -webkit-appearance: none;
+      transition: border-color 0.2s;
+      overflow-y: auto;
+      animation: fadeUp 0.4s ease both;
+      animation-delay: 0.1s;
+    }
+
+    .ate-textarea::placeholder { color: rgba(255,255,255,0.3); font-style: italic; }
+    .ate-textarea:focus { border-color: rgba(255,255,255,0.25); }
+
+    /* Body feel pills */
+    .feel-row {
+      display: flex;
+      gap: 10px;
+      animation: fadeUp 0.4s ease both;
+      animation-delay: 0.1s;
+    }
+
+    .feel-pill {
+      flex: 1;
+      height: 48px;
+      border-radius: 24px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: rgba(255,255,255,0.7);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 400;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .feel-pill:active { transform: scale(0.95); }
+
+    .feel-pill.selected {
+      background: rgba(201,184,232,0.25);
+      border-color: rgba(201,184,232,0.4);
+      color: white;
+    }
+
+    /* Submit button */
+    .submit-btn {
+      width: 100%;
+      height: 52px;
+      border: none;
+      border-radius: 16px;
+      background: linear-gradient(135deg, var(--lavender), var(--rose));
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--deep);
+      cursor: pointer;
+      margin-top: 28px;
+      transition: transform 0.15s, opacity 0.3s;
+      animation: fadeUp 0.4s ease both;
+      animation-delay: 0.15s;
+    }
+
+    .submit-btn:active { transform: scale(0.97); }
+
+    .submit-btn:disabled {
+      opacity: 0.35;
+      cursor: default;
+    }
+
+    .submit-btn:disabled:active { transform: none; }
+
+    /* Result card */
+    .result-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px 20px;
+      margin-top: 20px;
+      backdrop-filter: blur(20px);
+      animation: fadeUp 0.5s ease both;
+      display: none;
+    }
+
+    .result-card.visible { display: block; }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .result-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--lavender), var(--rose));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+      flex-shrink: 0;
+    }
+
+    .result-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 18px;
+      font-weight: 300;
+      font-style: italic;
+      color: white;
+    }
+
+    .result-insight {
+      font-size: 14px;
+      font-weight: 300;
+      line-height: 1.6;
+      color: rgba(255,255,255,0.8);
+      margin-bottom: 16px;
+    }
+
+    .result-divider {
+      height: 1px;
+      background: var(--border);
+      margin-bottom: 16px;
+    }
+
+    .result-tip-label {
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--lavender);
+      opacity: 0.7;
+      margin-bottom: 8px;
+    }
+
+    .result-tip {
+      font-size: 14px;
+      font-weight: 300;
+      line-height: 1.6;
+      color: rgba(255,255,255,0.7);
+      margin-bottom: 16px;
+    }
+
+    .result-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 20px;
+      background: rgba(201,184,232,0.12);
+      border: 1px solid rgba(201,184,232,0.2);
+      font-size: 13px;
+      color: var(--lavender);
+      margin-bottom: 16px;
+    }
+
+    .log-another-btn {
+      width: 100%;
+      height: 48px;
+      border-radius: 14px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 400;
+      color: rgba(255,255,255,0.7);
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+      margin-top: 4px;
+    }
+
+    .log-another-btn:active { transform: scale(0.97); background: rgba(255,255,255,0.14); }
+
+    /* Pattern insight card */
+    .pattern-card {
+      background: linear-gradient(135deg, rgba(201,184,232,0.12), rgba(232,165,176,0.08));
+      border: 1px solid rgba(201,184,232,0.2);
+      border-radius: 20px;
+      padding: 20px;
+      margin-top: 20px;
+      backdrop-filter: blur(20px);
+      animation: fadeUp 0.5s ease both;
+      animation-delay: 0.1s;
+      display: none;
+    }
+
+    .pattern-card.visible { display: block; }
+
+    .pattern-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 18px;
+      font-weight: 300;
+      font-style: italic;
+      color: white;
+      margin-bottom: 12px;
+    }
+
+    .pattern-text {
+      font-size: 13px;
+      font-weight: 300;
+      line-height: 1.6;
+      color: rgba(255,255,255,0.65);
+    }
+
+    /* Recent logs */
+    .recent-section {
+      margin-top: 28px;
+      animation: fadeUp 0.4s ease both;
+      animation-delay: 0.15s;
+    }
+
+    .recent-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 18px;
+      font-weight: 300;
+      font-style: italic;
+      color: white;
+      margin-bottom: 14px;
+    }
+
+    .recent-entry {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      backdrop-filter: blur(20px);
+    }
+
+    .recent-entry-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+
+    .recent-date {
+      font-size: 12px;
+      color: rgba(255,255,255,0.45);
+    }
+
+    .phase-pill {
+      font-size: 10px;
+      padding: 3px 10px;
+      border-radius: 10px;
+      font-weight: 500;
+      text-transform: capitalize;
+    }
+
+    .phase-pill.menstrual { background: rgba(232,165,176,0.2); color: var(--rose); }
+    .phase-pill.follicular { background: rgba(167,217,186,0.2); color: #a7d9ba; }
+    .phase-pill.ovulatory { background: rgba(232,213,165,0.2); color: #e8d5a5; }
+    .phase-pill.luteal { background: rgba(201,184,232,0.2); color: var(--lavender); }
+
+    .recent-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    .tiny-chip {
+      padding: 3px 10px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.07);
+      font-size: 11px;
+      color: rgba(255,255,255,0.55);
+    }
+
+    .recent-feel {
+      font-size: 12px;
+      color: rgba(255,255,255,0.4);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 24px 10px;
+    }
+
+    .empty-icon {
+      font-size: 28px;
+      margin-bottom: 10px;
+      opacity: 0.3;
+    }
+
+    .empty-text {
+      font-size: 13px;
+      font-weight: 300;
+      color: rgba(255,255,255,0.35);
+      line-height: 1.5;
+    }
+
+    /* Error toast */
+    .error-toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(232,165,176,0.2);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(232,165,176,0.3);
+      border-radius: 14px;
+      padding: 12px 20px;
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--rose);
+      opacity: 0;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      z-index: 50;
+      pointer-events: none;
+      max-width: 320px;
+      text-align: center;
+    }
+
+    .error-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* Hide form when result showing */
+    .form-section.hidden { display: none; }
+  </style>
+</head>
+<body>
+
+  <!-- Loading screen -->
+  <div class="loading-screen" id="loadingScreen">
+    <div class="loading-avatar">&#10022;</div>
+    <div class="loading-text">Loading...</div>
+  </div>
+
+  <div class="page-wrapper" id="pageWrapper">
+
+    <div class="header">
+      <div class="back-btn" onclick="navigate('home')">&#8592;</div>
+      <div class="header-title">Nutrition</div>
+      <div class="header-spacer"></div>
+    </div>
+
+    <div class="container" id="container">
+
+      <!-- Phase context banner -->
+      <div class="phase-banner" id="phaseBanner" style="display:none;">
+        <div class="phase-icon" id="phaseIcon">&#10022;</div>
+        <div class="phase-info">
+          <div class="phase-name" id="phaseName"></div>
+          <div class="phase-message" id="phaseMessage"></div>
+        </div>
+      </div>
+
+      <!-- Form section -->
+      <div class="form-section" id="formSection">
+
+        <!-- Cravings -->
+        <div class="section-label">What are you craving right now?</div>
+        <div class="chip-scroll" id="chipScroll"></div>
+        <div class="custom-input-row" id="customInputRow">
+          <input class="custom-input" id="customInput" type="text" placeholder="Type a craving..." maxlength="40">
+          <button class="custom-add-btn" id="customAddBtn" onclick="addCustomCraving()">+</button>
+        </div>
+        <div class="selected-tags" id="selectedTags"></div>
+
+        <!-- What I ate -->
+        <div class="section-label" style="animation-delay:0.08s;">What did you eat today? (optional)</div>
+        <textarea class="ate-textarea" id="ateTextarea" placeholder="e.g. oatmeal, salad, pasta..." rows="2" oninput="autoExpandTextarea(this)"></textarea>
+
+        <!-- How I feel -->
+        <div class="section-label" style="animation-delay:0.12s;">How does your body feel?</div>
+        <div class="feel-row" id="feelRow">
+          <div class="feel-pill" data-feel="energised" onclick="selectFeel(this)">Energised &#10024;</div>
+          <div class="feel-pill" data-feel="neutral" onclick="selectFeel(this)">Neutral &#128524;</div>
+          <div class="feel-pill" data-feel="heavy" onclick="selectFeel(this)">Heavy &#128532;</div>
+        </div>
+
+        <!-- Submit -->
+        <button class="submit-btn" id="submitBtn" disabled onclick="submitLog()">Get Kira's insight</button>
+      </div>
+
+      <!-- Result card -->
+      <div class="result-card" id="resultCard">
+        <div class="result-header">
+          <div class="result-avatar">&#10022;</div>
+          <div class="result-name">Kira</div>
+        </div>
+        <div class="result-insight" id="resultInsight"></div>
+        <div class="result-divider"></div>
+        <div class="result-tip-label">Food tip</div>
+        <div class="result-tip" id="resultTip"></div>
+        <div class="result-badge" id="resultBadge"></div>
+        <button class="log-another-btn" onclick="resetForm()">Log another</button>
+      </div>
+
+      <!-- Pattern insight card -->
+      <div class="pattern-card" id="patternCard">
+        <div class="pattern-title">Your craving pattern &#10022;</div>
+        <div class="pattern-text" id="patternText"></div>
+      </div>
+
+      <!-- Recent logs -->
+      <div class="recent-section" id="recentSection">
+        <div class="recent-title">Recent logs</div>
+        <div id="recentLogs"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Error toast -->
+  <div class="error-toast" id="errorToast"></div>
+
+  <script>
+    // Theme
+    (function(){var t=localStorage.getItem('kira_theme'),c={'default':'#2d1f35','midnight':'#1a1a2e','warm':'#2d2025'};if(t&&c[t])document.documentElement.style.setProperty('--deep',c[t]);})();
+
+    var BACKEND = 'https://kira-backend-lcwr.onrender.com';
+    var USER_ID = (function() {
+      try { var ws = window.AppInventor.getWebViewString(); if (ws && ws.indexOf('user:') === 0) return ws.split(':')[1]; } catch(e) {}
+      return localStorage.getItem('kira_user') || 'user_1';
+    })();
+
+    // State
+    var currentPhase = 'luteal';
+    var currentCycleDay = null;
+    var selectedCravings = [];
+    var selectedFeel = '';
+    var submitting = false;
+    var recentEntries = [];
+
+    var phaseEmojis = {
+      menstrual: '\uD83C\uDF19',
+      follicular: '\uD83C\uDF31',
+      ovulatory: '\u2728',
+      luteal: '\uD83C\uDF42'
+    };
+
+    var phaseMessages = {
+      menstrual: 'Iron and magnesium needs rise during your period \u2014 your body is asking for nourishment',
+      follicular: 'Lighter, fresher foods support your rising energy this week',
+      ovulatory: 'Your metabolism is slightly higher \u2014 honour your hunger',
+      luteal: 'Progesterone and serotonin shifts drive cravings for carbs and sugar \u2014 this is biological, not weakness'
+    };
+
+    var phaseCravings = {
+      menstrual: [
+        { label: 'chocolate', emoji: '\uD83C\uDF6B' },
+        { label: 'warm soup', emoji: '\uD83C\uDF5C' },
+        { label: 'carbs', emoji: '\uD83C\uDF5E' },
+        { label: 'comfort food', emoji: '\uD83E\uDD63' },
+        { label: 'sweet tea', emoji: '\uD83C\uDF75' }
+      ],
+      follicular: [
+        { label: 'fresh salad', emoji: '\uD83E\uDD57' },
+        { label: 'fruit', emoji: '\uD83C\uDF53' },
+        { label: 'light meals', emoji: '\uD83E\uDD59' },
+        { label: 'smoothie', emoji: '\uD83E\uDD64' },
+        { label: 'nuts', emoji: '\uD83E\uDD5C' }
+      ],
+      ovulatory: [
+        { label: 'protein', emoji: '\uD83E\uDD69' },
+        { label: 'energy foods', emoji: '\u26A1' },
+        { label: 'snacks', emoji: '\uD83C\uDF7F' },
+        { label: 'coffee', emoji: '\u2615' },
+        { label: 'anything', emoji: '\uD83D\uDE05' }
+      ],
+      luteal: [
+        { label: 'sugar', emoji: '\uD83C\uDF6C' },
+        { label: 'salt', emoji: '\uD83E\uDDC2' },
+        { label: 'chocolate', emoji: '\uD83C\uDF6B' },
+        { label: 'chips', emoji: '\uD83E\uDD54' },
+        { label: 'carbs', emoji: '\uD83C\uDF5E' },
+        { label: 'cheese', emoji: '\uD83E\uDDC0' }
+      ]
+    };
+
+    var cravingReasons = {
+      chocolate: 'magnesium needs',
+      sugar: 'serotonin dips',
+      salt: 'mineral shifts',
+      carbs: 'progesterone-driven energy needs',
+      cheese: 'calcium and fat cravings',
+      chips: 'salt and crunch seeking',
+      'comfort food': 'emotional nourishment',
+      'warm soup': 'iron and warmth seeking',
+      coffee: 'energy fluctuations',
+      'sweet tea': 'gentle comfort'
+    };
+
+    // Navigation
+    var navigating = false;
+    function navigate(screen) {
+      if (navigating) return;
+      navigating = true;
+      try { window.AppInventor.setWebViewString('navigate:' + screen); } catch(e) { navigating = false; }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // Init
+    function init() {
+      fetchCycleStatus();
+      fetchRecentLogs();
+    }
+
+    function fetchCycleStatus() {
+      fetch(BACKEND + '/cycle_status?user_id=' + USER_ID)
+        .then(function(res) {
+          if (!res.ok) throw new Error('Failed');
+          return res.json();
+        })
+        .then(function(data) {
+          if (data && data.phase) {
+            currentPhase = data.phase.toLowerCase();
+            currentCycleDay = data.cycle_day || null;
+          }
+        })
+        .catch(function() {
+          // Graceful fallback: use default phase
+        })
+        .finally(function() {
+          renderPhaseBanner();
+          renderChips();
+          hideLoading();
+        });
+    }
+
+    function fetchRecentLogs() {
+      fetch(BACKEND + '/recent_logs?type=diet&user_id=' + USER_ID + '&limit=10')
+        .then(function(res) {
+          if (!res.ok) throw new Error('Failed');
+          return res.json();
+        })
+        .then(function(data) {
+          if (data && Array.isArray(data.logs)) {
+            recentEntries = data.logs;
+          } else if (data && Array.isArray(data)) {
+            recentEntries = data;
+          }
+        })
+        .catch(function() {})
+        .finally(function() {
+          renderRecentLogs();
+          renderPatternCard();
+        });
+    }
+
+    function hideLoading() {
+      var el = document.getElementById('loadingScreen');
+      el.classList.add('hidden');
+      setTimeout(function() { el.style.display = 'none'; }, 500);
+    }
+
+    // Render phase banner
+    function renderPhaseBanner() {
+      var banner = document.getElementById('phaseBanner');
+      var msg = phaseMessages[currentPhase];
+      if (!msg) { banner.style.display = 'none'; return; }
+
+      document.getElementById('phaseIcon').textContent = phaseEmojis[currentPhase] || '\u2726';
+      document.getElementById('phaseName').textContent = currentPhase.charAt(0).toUpperCase() + currentPhase.slice(1) + ' phase' + (currentCycleDay ? ' \u2022 Day ' + currentCycleDay : '');
+      document.getElementById('phaseMessage').textContent = msg;
+      banner.style.display = 'flex';
+    }
+
+    // Render craving chips
+    function renderChips() {
+      var chips = phaseCravings[currentPhase] || phaseCravings.luteal;
+      var html = '';
+      for (var i = 0; i < chips.length; i++) {
+        html += '<div class="chip" data-craving="' + escapeHtml(chips[i].label) + '" onclick="toggleChip(this)">' + chips[i].emoji + ' ' + escapeHtml(chips[i].label) + '</div>';
+      }
+      html += '<div class="chip add-own" onclick="showCustomInput()">+ Add your own</div>';
+      document.getElementById('chipScroll').innerHTML = html;
+    }
+
+    // Toggle chip selection
+    function toggleChip(el) {
+      var craving = el.getAttribute('data-craving');
+      var idx = selectedCravings.indexOf(craving);
+      if (idx > -1) {
+        selectedCravings.splice(idx, 1);
+        el.classList.remove('selected');
+      } else {
+        selectedCravings.push(craving);
+        el.classList.add('selected');
+      }
+      renderSelectedTags();
+      updateSubmitBtn();
+    }
+
+    // Remove craving
+    function removeCraving(craving) {
+      var idx = selectedCravings.indexOf(craving);
+      if (idx > -1) selectedCravings.splice(idx, 1);
+      // Deselect chip if present
+      var chips = document.querySelectorAll('.chip[data-craving]');
+      for (var i = 0; i < chips.length; i++) {
+        if (chips[i].getAttribute('data-craving') === craving) {
+          chips[i].classList.remove('selected');
+        }
+      }
+      renderSelectedTags();
+      updateSubmitBtn();
+    }
+
+    // Render selected tags
+    function renderSelectedTags() {
+      var container = document.getElementById('selectedTags');
+      if (selectedCravings.length === 0) { container.innerHTML = ''; return; }
+      var html = '';
+      for (var i = 0; i < selectedCravings.length; i++) {
+        html += '<div class="tag" onclick="removeCraving(\'' + escapeHtml(selectedCravings[i]).replace(/'/g, "\\'") + '\')">' + escapeHtml(selectedCravings[i]) + ' <span class="tag-remove">\u2715</span></div>';
+      }
+      container.innerHTML = html;
+    }
+
+    // Custom craving input
+    function showCustomInput() {
+      var row = document.getElementById('customInputRow');
+      row.classList.add('visible');
+      document.getElementById('customInput').focus();
+    }
+
+    function addCustomCraving() {
+      var input = document.getElementById('customInput');
+      var val = input.value.trim().toLowerCase();
+      if (!val || val.length > 40) return;
+      if (selectedCravings.indexOf(val) === -1) {
+        selectedCravings.push(val);
+        renderSelectedTags();
+        updateSubmitBtn();
+      }
+      input.value = '';
+    }
+
+    // Listen for Enter in custom input
+    document.getElementById('customInput').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { e.preventDefault(); addCustomCraving(); }
+    });
+
+    // Body feel selection
+    function selectFeel(el) {
+      var pills = document.querySelectorAll('.feel-pill');
+      for (var i = 0; i < pills.length; i++) pills[i].classList.remove('selected');
+      el.classList.add('selected');
+      selectedFeel = el.getAttribute('data-feel');
+    }
+
+    // Update submit button
+    function updateSubmitBtn() {
+      document.getElementById('submitBtn').disabled = selectedCravings.length === 0;
+    }
+
+    // Auto-expand textarea
+    function autoExpandTextarea(el) {
+      el.style.height = 'auto';
+      var maxH = 140; // 5 lines approx
+      el.style.height = Math.min(el.scrollHeight, maxH) + 'px';
+    }
+
+    // Submit
+    function submitLog() {
+      if (submitting || selectedCravings.length === 0) return;
+      submitting = true;
+      var btn = document.getElementById('submitBtn');
+      btn.textContent = 'Logging...';
+      btn.disabled = true;
+
+      var payload = {
+        cravings: selectedCravings,
+        ate: document.getElementById('ateTextarea').value.trim(),
+        body_feel: selectedFeel,
+        phase: currentPhase,
+        cycle_day: currentCycleDay,
+        user_id: USER_ID
+      };
+
+      fetch(BACKEND + '/log_diet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(function(res) {
+        if (!res.ok) throw new Error('Failed');
+        return res.json();
+      })
+      .then(function(data) {
+        showResult(data, payload);
+      })
+      .catch(function() {
+        showErrorToast('Something went wrong. Please try again.');
+        btn.textContent = "Get Kira's insight";
+        btn.disabled = false;
+        submitting = false;
+      });
+    }
+
+    // Show result
+    function showResult(data, payload) {
+      submitting = false;
+
+      // Parse response
+      var insight = (data && data.insight) || 'Your cravings are valid. Listen to what your body is telling you.';
+      var tip = (data && data.food_tip) || (data && data.tip) || 'Try pairing cravings with nutrient-dense options to feel satisfied longer.';
+      var badge = (data && data.badge) || generateBadge(payload);
+
+      document.getElementById('resultInsight').textContent = insight;
+      document.getElementById('resultTip').textContent = tip;
+      document.getElementById('resultBadge').textContent = badge;
+
+      // Hide form, show result
+      document.getElementById('formSection').classList.add('hidden');
+      document.getElementById('resultCard').classList.add('visible');
+
+      // Add to recent logs immediately
+      var newEntry = {
+        date: new Date().toISOString(),
+        phase: currentPhase,
+        cravings: selectedCravings.slice(),
+        body_feel: selectedFeel,
+        ate: payload.ate
+      };
+      recentEntries.unshift(newEntry);
+      renderRecentLogs();
+      renderPatternCard();
+
+      // Scroll to top
+      document.getElementById('container').scrollTop = 0;
+    }
+
+    function generateBadge(payload) {
+      var badges = {
+        menstrual: '\uD83C\uDF19 Nourished through your period',
+        follicular: '\uD83C\uDF31 Fuelling your fresh energy',
+        ovulatory: '\u2728 Honouring your hunger',
+        luteal: '\uD83C\uDF42 Listening to your body'
+      };
+      return badges[payload.phase] || '\u2726 Mindful eater';
+    }
+
+    // Reset form
+    function resetForm() {
+      selectedCravings = [];
+      selectedFeel = '';
+
+      document.getElementById('resultCard').classList.remove('visible');
+      document.getElementById('formSection').classList.remove('hidden');
+      document.getElementById('ateTextarea').value = '';
+      document.getElementById('ateTextarea').style.height = 'auto';
+      document.getElementById('customInputRow').classList.remove('visible');
+      document.getElementById('customInput').value = '';
+
+      var pills = document.querySelectorAll('.feel-pill');
+      for (var i = 0; i < pills.length; i++) pills[i].classList.remove('selected');
+
+      renderChips();
+      renderSelectedTags();
+      updateSubmitBtn();
+
+      var btn = document.getElementById('submitBtn');
+      btn.textContent = "Get Kira's insight";
+      btn.disabled = true;
+
+      document.getElementById('container').scrollTop = 0;
+    }
+
+    // Error toast
+    function showErrorToast(msg) {
+      var toast = document.getElementById('errorToast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(function() { toast.classList.remove('show'); }, 3000);
+    }
+
+    // Date formatting
+    function formatDate(dateStr) {
+      var d = new Date(dateStr);
+      var now = new Date();
+      var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      var target = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      var diff = today.getTime() - target.getTime();
+      var dayMs = 86400000;
+
+      if (diff < dayMs && diff >= 0) return 'Today';
+      if (diff < dayMs * 2 && diff >= dayMs) return 'Yesterday';
+
+      var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return months[d.getMonth()] + ' ' + d.getDate();
+    }
+
+    // Render recent logs
+    function renderRecentLogs() {
+      var container = document.getElementById('recentLogs');
+      var entries = recentEntries.slice(0, 3);
+
+      if (entries.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-icon">\uD83C\uDF7D\uFE0F</div><div class="empty-text">Your nutrition history will appear here</div></div>';
+        return;
+      }
+
+      var feelIcons = { energised: '\u2728', neutral: '\uD83D\uDE0C', heavy: '\uD83D\uDE14' };
+      var html = '';
+      for (var i = 0; i < entries.length; i++) {
+        var e = entries[i];
+        var phase = e.phase || '';
+        var cravings = e.cravings || [];
+        var feel = e.body_feel || '';
+
+        html += '<div class="recent-entry">';
+        html += '<div class="recent-entry-header">';
+        html += '<span class="recent-date">' + formatDate(e.date) + '</span>';
+        if (phase) html += '<span class="phase-pill ' + escapeHtml(phase) + '">' + escapeHtml(phase) + '</span>';
+        html += '</div>';
+
+        if (cravings.length > 0) {
+          html += '<div class="recent-chips">';
+          for (var j = 0; j < cravings.length; j++) {
+            html += '<span class="tiny-chip">' + escapeHtml(cravings[j]) + '</span>';
+          }
+          html += '</div>';
+        }
+
+        if (feel) html += '<div class="recent-feel">' + (feelIcons[feel] || '') + ' ' + escapeHtml(feel) + '</div>';
+        html += '</div>';
+      }
+
+      container.innerHTML = html;
+    }
+
+    // Render pattern card
+    function renderPatternCard() {
+      var card = document.getElementById('patternCard');
+      if (recentEntries.length < 5) { card.classList.remove('visible'); return; }
+
+      // Analyze most common craving for current phase
+      var phaseLogs = [];
+      for (var i = 0; i < recentEntries.length; i++) {
+        if (recentEntries[i].phase === currentPhase) phaseLogs.push(recentEntries[i]);
+      }
+
+      if (phaseLogs.length < 2) { card.classList.remove('visible'); return; }
+
+      var counts = {};
+      for (var i = 0; i < phaseLogs.length; i++) {
+        var cravs = phaseLogs[i].cravings || [];
+        for (var j = 0; j < cravs.length; j++) {
+          var c = cravs[j].toLowerCase();
+          counts[c] = (counts[c] || 0) + 1;
+        }
+      }
+
+      var topCraving = '';
+      var topCount = 0;
+      for (var key in counts) {
+        if (counts[key] > topCount) { topCount = counts[key]; topCraving = key; }
+      }
+
+      if (!topCraving || topCount < 2) { card.classList.remove('visible'); return; }
+
+      var reason = cravingReasons[topCraving] || 'your body\'s natural signals';
+      var text = 'You often crave ' + topCraving + ' in your ' + currentPhase + ' phase \u2014 this is linked to ' + reason + '.';
+
+      document.getElementById('patternText').textContent = text;
+      card.classList.add('visible');
+    }
+
+    // ── Prevent body scroll ──
+    var scrollContainer = document.getElementById('container');
+
+    document.addEventListener('touchmove', function(e) {
+      var target = e.target;
+      while (target && target !== document.body && target !== document.documentElement) {
+        if (target === scrollContainer) return;
+        target = target.parentElement;
+      }
+      e.preventDefault();
+    }, { passive: false });
+
+    // ── Viewport resize for keyboard ──
+    var pageWrapper = document.getElementById('pageWrapper');
+    var lastViewportHeight = window.innerHeight;
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', function() {
+        var newHeight = window.visualViewport.height;
+        pageWrapper.style.height = newHeight + 'px';
+        window.scrollTo(0, 0);
+        document.body.scrollTop = 0;
+        lastViewportHeight = newHeight;
+      });
+
+      window.visualViewport.addEventListener('scroll', function() {
+        window.scrollTo(0, 0);
+      });
+    }
+
+    // Init
+    init();
+  </script>
+</body>
+</html>

@@ -703,8 +703,12 @@
   <div class="error-toast" id="errorToast">Something went wrong, but you can still exit.</div>
 
   <script>
+    (function(){var t=localStorage.getItem('kira_theme'),c={'default':'#2d1f35','midnight':'#1a1a2e','warm':'#2d2025'};if(t&&c[t])document.documentElement.style.setProperty('--deep',c[t]);})();
     var BACKEND = 'https://kira-backend-lcwr.onrender.com';
-    var USER_ID = new URLSearchParams(window.location.search).get('user') || 'user_1';
+    var USER_ID = (function() {
+      try { var ws = window.AppInventor.getWebViewString(); if (ws && ws.indexOf('user:') === 0) return ws.split(':')[1]; } catch(e) {}
+      return localStorage.getItem('kira_user') || 'user_1';
+    })();
 
     /* ── State ── */
     var chosenMinutes = 15;

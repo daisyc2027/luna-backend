@@ -249,22 +249,31 @@ def log_sleep():
     user_id = data.get('user_id', 'user_1')
     hours = data.get('hours', 0)
     quality = data.get('quality', 'unknown')
+    notes = data.get('notes', '')
     cycle_phase = data.get('phase', 'unknown')
     cycle_day = data.get('cycle_day', 0)
 
     summary = get_user_summary(user_id)
 
+    # Get recent sleep logs for personalisation
+    recent_sleep = [d.to_dict() for d in user_collection(user_id, 'sleep_logs').order_by('date', direction='DESCENDING').limit(5).stream()]
+    phase_sleep = [l for l in recent_sleep if l.get('phase') == cycle_phase]
+    phase_avg = round(sum(l.get('hours', 0) for l in phase_sleep) / len(phase_sleep), 1) if phase_sleep else None
+    personalised = len(recent_sleep) >= 5
+
     prompt = f"""
     You are a compassionate women's health assistant.
-    
+
     The user is in their {cycle_phase} phase (day {cycle_day}).
     They slept {hours} hours and rated their sleep quality as {quality}.
+    {f'Additional notes: {notes}' if notes else ''}
     Their historical average sleep is {summary['sleep_patterns']['average_hours']} hours.
-    
+    {f'Their average sleep during {cycle_phase} phase is {phase_avg} hours.' if phase_avg else ''}
+
     Based on their cycle phase, sleep data, and history:
-    1. Explain in 1 sentence why their sleep may be affected hormonally right now
+    1. Explain in 1-2 sentences why their sleep may be affected hormonally right now
     2. Give one specific actionable tip to improve their sleep tonight
-    
+
     Respond in JSON only, no other text:
     {{
         "insight": "hormonal explanation here",
@@ -272,19 +281,27 @@ def log_sleep():
     }}
     """
 
-    response = client.chat.completions.create(
-        model="deepseek-chat",
-        messages=[{"role": "user", "content": prompt}],
-        max_tokens=300
-    )
+    try:
+        response = client.chat.completions.create(
+            model="deepseek-chat",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=300
+        )
+        result = json.loads(response.choices[0].message.content)
+    except Exception:
+        result = {
+            "insight": "Your sleep is important during your " + cycle_phase + " phase.",
+            "tip": "Try to keep a consistent bedtime tonight."
+        }
 
-    result = json.loads(response.choices[0].message.content)
+    result['personalised'] = personalised
 
     # Save to Firebase
     user_collection(user_id, 'sleep_logs').add({
         "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
         "hours": hours,
         "quality": quality,
+        "notes": notes,
         "phase": cycle_phase,
         "cycle_day": cycle_day
     })
@@ -301,25 +318,38 @@ def log_diet():
         data = {item[0]: item[1] for item in data}
 
     user_id = data.get('user_id', 'user_1')
+    cravings = data.get('cravings', [])
     craving = data.get('craving', '')
+    # Support both old string format and new array format
+    if not cravings and craving:
+        cravings = [craving]
+    craving_str = ', '.join(cravings) if cravings else craving
     ate = data.get('ate', '')
+    body_feel = data.get('body_feel', '')
     cycle_phase = data.get('phase', 'unknown')
     cycle_day = data.get('cycle_day', 0)
 
     summary = get_user_summary(user_id)
 
+    # Get recent diet logs for personalisation
+    recent_diet = [d.to_dict() for d in user_collection(user_id, 'diet_logs').order_by('date', direction='DESCENDING').limit(5).stream()]
+    personalised = len(recent_diet) >= 5
+    phase_cravings = [l.get('craving', '') for l in recent_diet if l.get('phase') == cycle_phase and l.get('craving')]
+
     prompt = f"""
     You are a compassionate women's health assistant.
-    
+
     The user is in their {cycle_phase} phase (day {cycle_day}).
-    They are craving: "{craving}"
+    They are craving: "{craving_str}"
     They ate: "{ate}"
+    They feel: "{body_feel}"
     Their most common historical craving is: {summary['diet_patterns']['most_common_craving']}
-    
+    {f'Common cravings in their {cycle_phase} phase: {", ".join(phase_cravings[:3])}' if phase_cravings else ''}
+
     Based on their cycle phase, dietary input, and history:
-    1. Explain in 1 sentence why they might be experiencing these cravings hormonally
+    1. Explain in 1-2 sentences why they might be experiencing these cravings hormonally
     2. Give one specific food swap or mindful eating tip for this phase
-    
+
     Respond in JSON only, no other text:
     {{
         "insight": "hormonal explanation here",
@@ -327,19 +357,28 @@ def log_diet():
     }}
     """
 
-    response = client.chat.completions.create(
-        model="deepseek-chat",
-        messages=[{"role": "user", "content": prompt}],
-        max_tokens=300
-    )
+    try:
+        response = client.chat.completions.create(
+            model="deepseek-chat",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=300
+        )
+        result = json.loads(response.choices[0].message.content)
+    except Exception:
+        result = {
+            "insight": "Cravings during your " + cycle_phase + " phase are completely normal and driven by hormones.",
+            "tip": "Try pairing your craving with something nutrient-dense."
+        }
 
-    result = json.loads(response.choices[0].message.content)
+    result['personalised'] = personalised
 
     # Save to Firebase
     user_collection(user_id, 'diet_logs').add({
         "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
-        "craving": craving,
+        "craving": craving_str,
+        "cravings": cravings,
         "ate": ate,
+        "body_feel": body_feel,
         "phase": cycle_phase,
         "cycle_day": cycle_day
     })
@@ -940,6 +979,92 @@ def save_journal():
     })
 
     return jsonify({"status": "ok", "message": "Journal entry saved"})
+
+
+@app.route('/recent_logs', methods=['GET'])
+def recent_logs():
+    user_id = request.args.get('user_id', 'user_1')
+    log_type = request.args.get('type', 'sleep')
+    limit_count = int(request.args.get('limit', 3))
+
+    collection_map = {
+        'sleep': 'sleep_logs',
+        'diet': 'diet_logs',
+        'emotion': 'emotion_logs',
+        'journal': 'journal_logs',
+        'intervention': 'intervention_logs'
+    }
+
+    coll_name = collection_map.get(log_type)
+    if not coll_name:
+        return jsonify({"error": "Invalid log type"}), 400
+
+    try:
+        docs = user_collection(user_id, coll_name).order_by('date', direction='DESCENDING').limit(limit_count).stream()
+        logs = [d.to_dict() for d in docs]
+    except Exception:
+        # If no index exists, fall back to unordered
+        docs = user_collection(user_id, coll_name).limit(limit_count).stream()
+        logs = sorted([d.to_dict() for d in docs], key=lambda x: x.get('date', ''), reverse=True)
+
+    return jsonify({"logs": logs})
+
+
+@app.route('/insights', methods=['GET'])
+def insights():
+    user_id = request.args.get('user_id', 'user_1')
+
+    result = {}
+
+    # Emotion history
+    emotion_logs = [d.to_dict() for d in user_collection(user_id, 'emotion_logs').stream()]
+    result['emotion_history'] = sorted(emotion_logs, key=lambda x: x.get('date', ''), reverse=True)[:30]
+
+    # Emotion breakdown
+    if emotion_logs:
+        from collections import Counter
+        emotions = [l.get('emotion', '') for l in emotion_logs if l.get('emotion') and l['emotion'] != 'unknown']
+        counts = Counter(emotions)
+        total = sum(counts.values())
+        result['emotion_breakdown'] = [{'emotion': e, 'count': c, 'percent': round(c/total*100)} for e, c in counts.most_common(6)]
+    else:
+        result['emotion_breakdown'] = []
+
+    # Mood trend (from emotion logs that have mood_rating, or approximate from emotions)
+    mood_logs = [l for l in emotion_logs if l.get('mood_rating')]
+    result['mood_trend'] = sorted(mood_logs, key=lambda x: x.get('date', ''), reverse=True)[:7]
+
+    # Sleep history
+    sleep_logs = [d.to_dict() for d in user_collection(user_id, 'sleep_logs').stream()]
+    result['sleep_history'] = sorted(sleep_logs, key=lambda x: x.get('date', ''), reverse=True)[:7]
+
+    # Diet history
+    diet_logs = [d.to_dict() for d in user_collection(user_id, 'diet_logs').stream()]
+    result['diet_history'] = sorted(diet_logs, key=lambda x: x.get('date', ''), reverse=True)[:7]
+
+    # Journal entries
+    journal_logs = [d.to_dict() for d in user_collection(user_id, 'journal_logs').stream()]
+    result['journal_entries'] = sorted(journal_logs, key=lambda x: x.get('date', ''), reverse=True)[:20]
+
+    # Intervention stats
+    intervention_logs = [d.to_dict() for d in user_collection(user_id, 'intervention_logs').stream()]
+    if intervention_logs:
+        from collections import defaultdict
+        stats = defaultdict(lambda: {'ratings': [], 'count': 0})
+        for log in intervention_logs:
+            name = log.get('intervention_name', '')
+            if name:
+                stats[name]['ratings'].append(log.get('rating', 0))
+                stats[name]['count'] += 1
+        result['intervention_stats'] = [
+            {'name': k, 'avg_rating': round(sum(v['ratings'])/len(v['ratings']), 1), 'times_used': v['count']}
+            for k, v in stats.items()
+        ]
+        result['intervention_stats'].sort(key=lambda x: x['avg_rating'], reverse=True)
+    else:
+        result['intervention_stats'] = []
+
+    return jsonify(result)
 
 
 if __name__ == '__main__':

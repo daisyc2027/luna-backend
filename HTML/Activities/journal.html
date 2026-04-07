@@ -840,8 +840,12 @@
   </div>
 
   <script>
+    (function(){var t=localStorage.getItem('kira_theme'),c={'default':'#2d1f35','midnight':'#1a1a2e','warm':'#2d2025'};if(t&&c[t])document.documentElement.style.setProperty('--deep',c[t]);})();
     const API = 'https://kira-backend-lcwr.onrender.com';
-    const USER_ID = new URLSearchParams(window.location.search).get('user') || 'user_1';
+    const USER_ID = (function() {
+      try { var ws = window.AppInventor.getWebViewString(); if (ws && ws.indexOf('user:') === 0) return ws.split(':')[1]; } catch(e) {}
+      return localStorage.getItem('kira_user') || 'user_1';
+    })();
 
     const PHASE_PROMPTS = {
       menstrual: [

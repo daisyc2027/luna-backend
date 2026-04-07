@@ -522,7 +522,7 @@
       </div>
 
       <!-- Step 5: Last period -->
-      <div class="step" id="step5">
+      <div class="step" id="step5" style="justify-content:center;padding-bottom:80px;">
         <div class="step-label">Your cycle</div>
         <div class="step-title">When did your<br>last period<br>start?</div>
         <div class="step-sub">Kira uses this to track your cycle phase in real time.</div>
@@ -636,24 +636,43 @@
     }
 
     function goForward() {
-      var curEl = document.querySelector('.step.active');
-      if (curEl) {
-        curEl.classList.add('exiting');
-        curEl.classList.remove('active');
+      // Dismiss keyboard before transitioning to prevent blank page
+      if (document.activeElement && document.activeElement.blur) {
+        document.activeElement.blur();
       }
 
-      flowIndex++;
-      updateUI();
-
+      // Small delay to let keyboard close and viewport restore
       setTimeout(function() {
-        if (curEl) curEl.classList.remove('exiting');
-        var nextEl = document.getElementById(getCurrentStepId());
-        if (nextEl) nextEl.classList.add('active');
-      }, 350);
+        var wrapper = document.getElementById('pageWrapper');
+        wrapper.style.height = '';
+        window.scrollTo(0, 0);
+
+        var curEl = document.querySelector('.step.active');
+        if (curEl) {
+          curEl.classList.add('exiting');
+          curEl.classList.remove('active');
+        }
+
+        flowIndex++;
+        updateUI();
+
+        setTimeout(function() {
+          if (curEl) curEl.classList.remove('exiting');
+          var nextEl = document.getElementById(getCurrentStepId());
+          if (nextEl) nextEl.classList.add('active');
+        }, 350);
+      }, 150);
     }
 
     function goBack() {
       if (flowIndex <= 0) return;
+
+      if (document.activeElement && document.activeElement.blur) {
+        document.activeElement.blur();
+      }
+      var wrapper = document.getElementById('pageWrapper');
+      wrapper.style.height = '';
+      window.scrollTo(0, 0);
 
       var curEl = document.querySelector('.step.active');
       if (curEl) {
@@ -795,6 +814,7 @@
             return;
           }
           userId = result.data.user_id || result.data.username;
+          localStorage.setItem('kira_user', userId);
           goForward();
         })
         .catch(function() {
@@ -832,9 +852,10 @@
             return;
           }
           userId = result.data.user_id || result.data.username;
+          localStorage.setItem('kira_user', userId);
           if (result.data.onboarding_complete) {
             // Skip onboarding, go straight to home
-            window.AppInventor.setWebViewString('navigate:home');
+            window.AppInventor.setWebViewString('navigate:home:' + userId);
           } else {
             // Need to complete onboarding — switch to signup flow from step 3
             currentFlow = signupFlow;
@@ -873,6 +894,12 @@
         userData.last_period_date = document.getElementById('periodInput').value;
         if (!userData.last_period_date) {
           document.getElementById('periodInput').focus();
+          return;
+        }
+        // Prevent future dates
+        var todayStr = yyyy + '-' + mm + '-' + dd;
+        if (userData.last_period_date > todayStr) {
+          showToast('Date cannot be in the future');
           return;
         }
       }
@@ -988,11 +1015,11 @@
         document.getElementById('personalisingText').textContent = 'Ready \u2726';
         await new Promise(function(r) { setTimeout(r, 600); });
 
-        window.AppInventor.setWebViewString('navigate:home');
+        window.AppInventor.setWebViewString('navigate:home:' + userId);
       } catch(err) {
         document.getElementById('personalisingText').textContent = 'Almost ready...';
         await new Promise(function(r) { setTimeout(r, 1500); });
-        window.AppInventor.setWebViewString('navigate:home');
+        window.AppInventor.setWebViewString('navigate:home:' + userId);
       }
     }
 

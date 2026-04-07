@@ -232,22 +232,47 @@
       margin: 0 auto;
     }
 
-    /* Clear chat button */
-    .clear-btn {
-      display: none;
-      margin: 0 auto 16px;
-      padding: 8px 20px;
+    /* Clear icon in header */
+    .clear-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
       background: rgba(255,255,255,0.06);
       border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 20px;
-      font-size: 12px;
-      color: rgba(255,255,255,0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
       cursor: pointer;
-      font-family: 'DM Sans', sans-serif;
+      flex-shrink: 0;
+      margin-left: auto;
       transition: opacity 0.15s;
     }
+    .clear-icon:active { opacity: 0.6; }
 
-    .clear-btn:active { opacity: 0.6; }
+    /* Prompt pills */
+    .prompt-pills {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 16px;
+      max-width: 280px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .prompt-pill {
+      background: rgba(201,184,232,0.12);
+      border: 1px solid rgba(201,184,232,0.25);
+      border-radius: 16px;
+      padding: 10px 16px;
+      font-size: 13px;
+      color: rgba(255,255,255,0.7);
+      cursor: pointer;
+      text-align: left;
+      transition: transform 0.15s, background 0.15s;
+      font-family: 'DM Sans', sans-serif;
+      line-height: 1.4;
+    }
+    .prompt-pill:active { transform: scale(0.97); background: rgba(201,184,232,0.2); }
 
     /* Bubbles */
     .bubble-row {
@@ -340,25 +365,52 @@
     .typing-dot:nth-child(2) { animation-delay: 0.2s; }
     .typing-dot:nth-child(3) { animation-delay: 0.4s; }
 
-    /* Intervention button */
-    .intervention-btn {
-      flex-shrink: 0;
-      margin: 0 16px 8px 52px;
-      padding: 10px 18px;
-      background: linear-gradient(135deg, rgba(201,184,232,0.2), rgba(232,165,176,0.15));
-      border: 1px solid rgba(201,184,232,0.3);
-      border-radius: 20px;
-      font-size: 13px;
-      color: var(--lavender);
+    /* Intervention card (inline in chat) */
+    .intervention-card {
+      margin: 4px 0 8px 36px;
+      padding: 14px 16px;
+      background: linear-gradient(135deg, rgba(201,184,232,0.15), rgba(232,165,176,0.1));
+      border: 1px solid rgba(201,184,232,0.25);
+      border-radius: 18px;
       cursor: pointer;
-      display: none;
-      width: fit-content;
-      transition: opacity 0.15s;
-      font-family: 'DM Sans', sans-serif;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      max-width: 75%;
+      transition: transform 0.15s, opacity 0.15s;
+      animation: fadeUp 0.3s ease both;
       backdrop-filter: blur(10px);
     }
-
-    .intervention-btn:active { opacity: 0.7; }
+    .intervention-card:active { transform: scale(0.97); opacity: 0.8; }
+    .intervention-card-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: rgba(201,184,232,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .intervention-card-info { flex: 1; min-width: 0; }
+    .intervention-card-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: white;
+      margin-bottom: 2px;
+    }
+    .intervention-card-desc {
+      font-size: 11px;
+      color: rgba(255,255,255,0.45);
+    }
+    .intervention-card-action {
+      font-size: 12px;
+      color: var(--lavender);
+      font-weight: 500;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
 
     /* Input area */
     .input-area {
@@ -449,6 +501,9 @@
           Always here for you
         </div>
       </div>
+      <div class="clear-icon" id="clearIcon" onclick="confirmClear()" style="display:none;" title="Clear chat">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      </div>
     </div>
 
     <div class="chat-area" id="chatArea">
@@ -457,11 +512,8 @@
         <div class="welcome-avatar">✦</div>
         <div class="welcome-title">Hey, I'm Kira</div>
         <div class="welcome-sub">I'm here to listen. Tell me how you're feeling today.</div>
+        <div class="prompt-pills" id="promptPills"></div>
       </div>
-
-      <button class="clear-btn" id="clearBtn" onclick="confirmClear()">
-        Clear conversation
-      </button>
 
       <div class="typing-row" id="typingIndicator">
         <div class="bubble-avatar">✦</div>
@@ -473,10 +525,6 @@
       </div>
 
     </div>
-
-    <button class="intervention-btn" id="interventionBtn" onclick="openIntervention()">
-      🌬️ Try a breathing exercise
-    </button>
 
     <div class="input-area">
       <textarea
@@ -493,11 +541,54 @@
   </div>
 
   <script>
+    // Apply saved theme
+    (function(){var t=localStorage.getItem('kira_theme'),c={'default':'#2d1f35','midnight':'#1a1a2e','warm':'#2d2025'};if(t&&c[t])document.documentElement.style.setProperty('--deep',c[t]);})();
+
     const BACKEND_URL = 'https://kira-backend-lcwr.onrender.com';
-    const USER_ID = new URLSearchParams(window.location.search).get('user') || 'user_1';
+    const USER_ID = (function() {
+      try { var ws = window.AppInventor.getWebViewString(); if (ws && ws.indexOf('user:') === 0) return ws.split(':')[1]; } catch(e) {}
+      return localStorage.getItem('kira_user') || 'user_1';
+    })();
     const STORAGE_KEY = 'kira_chat_' + USER_ID;
     var CYCLE_PHASE = 'unknown';
     var CYCLE_DAY = 0;
+
+    // Phase-based prompts
+    var phasePrompts = {
+      menstrual: [
+        "I'm feeling really tired and drained today",
+        "I need some comfort — everything feels heavy",
+        "My cramps are bad and I can't focus"
+      ],
+      follicular: [
+        "I'm feeling motivated but don't know where to start",
+        "I have so much energy — help me channel it",
+        "I want to try something new today"
+      ],
+      ovulatory: [
+        "I feel confident but also a bit overwhelmed",
+        "I said something I regret and feel anxious about it",
+        "I have so much to do and feel scattered"
+      ],
+      luteal: [
+        "I'm feeling really irritable and snappy today",
+        "I can't stop craving sugar and junk food",
+        "Everything is making me emotional and I don't know why"
+      ]
+    };
+
+    function renderPrompts(phase) {
+      var pills = document.getElementById('promptPills');
+      var prompts = phasePrompts[phase] || phasePrompts.luteal;
+      pills.innerHTML = prompts.map(function(p) {
+        return '<div class="prompt-pill" onclick="usePrompt(this)">' + p + '</div>';
+      }).join('');
+    }
+
+    function usePrompt(el) {
+      document.getElementById('messageInput').value = el.textContent;
+      sendMessage();
+    }
 
     // Fetch cycle status for this user
     fetch(BACKEND_URL + '/cycle_status?user_id=' + USER_ID)
@@ -506,9 +597,12 @@
         if (d) {
           CYCLE_PHASE = d.phase || 'unknown';
           CYCLE_DAY = d.cycle_day || 0;
+          renderPrompts(CYCLE_PHASE);
+        } else {
+          renderPrompts('luteal');
         }
       })
-      .catch(function() {});
+      .catch(function() { renderPrompts('luteal'); });
 
     let isWaiting = false;
     let lastScrollTop = 0;
@@ -561,7 +655,7 @@
 
         // Hide welcome message
         document.getElementById('welcomeMsg').style.display = 'none';
-        document.getElementById('clearBtn').style.display = 'block';
+        document.getElementById('clearIcon').style.display = 'flex';
 
         // Restore bubbles
         history.forEach(function(item) {
@@ -584,15 +678,15 @@
         localStorage.removeItem(STORAGE_KEY);
       } catch(e) {}
 
-      // Remove all bubble rows
+      // Remove all bubble rows and intervention cards
       const chatArea = document.getElementById('chatArea');
-      const bubbles = chatArea.querySelectorAll('.bubble-row');
+      const bubbles = chatArea.querySelectorAll('.bubble-row, .intervention-card');
       bubbles.forEach(function(b) { b.remove(); });
 
-      // Show welcome again
+      // Show welcome again with prompts
       document.getElementById('welcomeMsg').style.display = 'block';
-      document.getElementById('clearBtn').style.display = 'none';
-      document.getElementById('interventionBtn').style.display = 'none';
+      document.getElementById('clearIcon').style.display = 'none';
+      renderPrompts(CYCLE_PHASE || 'luteal');
     }
 
     // ── Prevent body scroll ──
@@ -671,7 +765,7 @@
       if (save === undefined) save = true;
 
       document.getElementById('welcomeMsg').style.display = 'none';
-      document.getElementById('clearBtn').style.display = 'block';
+      document.getElementById('clearIcon').style.display = 'flex';
 
       const chatArea = document.getElementById('chatArea');
       const typingIndicator = document.getElementById('typingIndicator');
@@ -734,7 +828,6 @@
 
       isWaiting = true;
       document.getElementById('sendBtn').disabled = true;
-      document.getElementById('interventionBtn').style.display = 'none';
 
       addBubble('user', text);
       input.value = '';
@@ -758,24 +851,7 @@
         addBubble('kira', data.message);
 
         if (data.intervention_trigger && data.intervention_trigger !== 'null') {
-          const btn = document.getElementById('interventionBtn');
-          btn.style.display = 'block';
-          if (data.intervention_trigger === 'BREATHING') {
-            btn.textContent = '🌬️ Try a breathing exercise';
-            btn.dataset.target = 'breathing';
-          } else if (data.intervention_trigger === 'URGE_SURF') {
-            btn.textContent = '🌊 Try urge surfing';
-            btn.dataset.target = 'urge_surf';
-          } else if (data.intervention_trigger === 'HAPTIC') {
-            btn.textContent = '📳 Try a calming reset';
-            btn.dataset.target = 'haptic';
-          } else if (data.intervention_trigger === 'GROUNDING') {
-            btn.textContent = '🌿 Try a grounding exercise';
-            btn.dataset.target = 'grounding';
-          } else if (data.intervention_trigger === 'JOURNAL') {
-            btn.textContent = '📓 Try guided journaling';
-            btn.dataset.target = 'journal';
-          }
+          addInterventionCard(data.intervention_trigger);
           scrollToBottom();
         }
 
@@ -793,10 +869,36 @@
       window.AppInventor.setWebViewString('navigate:home');
     }
 
-    function openIntervention() {
-      var btn = document.getElementById('interventionBtn');
-      var target = btn.dataset.target || 'breathing';
-      window.AppInventor.setWebViewString('navigate:' + target);
+    var interventionInfo = {
+      BREATHING:  { icon: '🌬️', name: 'Box Breathing',        desc: '4-4-4-4 breath pattern', target: 'breathing' },
+      URGE_SURF:  { icon: '🌊', name: 'Urge Surfing',         desc: 'Ride the wave of a craving', target: 'urge_surf' },
+      HAPTIC:     { icon: '📳', name: 'Haptic Reset',          desc: 'Rhythmic vibration to calm', target: 'haptic' },
+      GROUNDING:  { icon: '🌿', name: '5-4-3-2-1 Grounding',  desc: 'Anchor with your senses', target: 'grounding' },
+      JOURNAL:    { icon: '📓', name: 'Phase Reflection',      desc: 'Guided journaling prompts', target: 'journal' }
+    };
+
+    function addInterventionCard(trigger) {
+      var info = interventionInfo[trigger];
+      if (!info) return;
+
+      var chatArea = document.getElementById('chatArea');
+      var typingIndicator = document.getElementById('typingIndicator');
+
+      var card = document.createElement('div');
+      card.className = 'intervention-card';
+      card.onclick = function() {
+        window.AppInventor.setWebViewString('navigate:' + info.target);
+      };
+      card.innerHTML =
+        '<div class="intervention-card-icon">' + info.icon + '</div>' +
+        '<div class="intervention-card-info">' +
+          '<div class="intervention-card-name">' + info.name + '</div>' +
+          '<div class="intervention-card-desc">' + info.desc + '</div>' +
+        '</div>' +
+        '<div class="intervention-card-action">Try it →</div>';
+
+      chatArea.insertBefore(card, typingIndicator);
+      scrollToBottom();
     }
 
     // ── Init ──

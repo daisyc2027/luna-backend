@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Kira — Sleep</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --rose: #e8a5b0;
+      --blush: #f2c4ce;
+      --lavender: #c9b8e8;
+      --deep: #2d1f35;
+      --card: rgba(255, 255, 255, 0.09);
+      --border: rgba(255, 255, 255, 0.14);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html {
+      height: 100%;
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: var(--deep);
+      font-family: 'DM Sans', sans-serif;
+      color: white;
+      touch-action: none;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -30%;
+      left: -20%;
+      width: 70%;
+      height: 70%;
+      background: radial-gradient(circle, rgba(201, 184, 232, 0.22) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      bottom: -20%;
+      right: -20%;
+      width: 60%;
+      height: 60%;
+      background: radial-gradient(circle, rgba(232, 165, 176, 0.18) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Loading Screen */
+    .loading-screen {
+      position: fixed;
+      inset: 0;
+      background: var(--deep);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      transition: opacity 0.4s ease;
+    }
+
+    .loading-screen.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .loading-avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--lavender), var(--rose));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      animation: pulse 1.6s ease-in-out infinite;
+      box-shadow: 0 0 30px rgba(201, 184, 232, 0.3);
+    }
+
+    .loading-text {
+      margin-top: 16px;
+      font-size: 12px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.35);
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.08); opacity: 0.7; }
+    }
+
+    /* Page Wrapper */
+    .page-wrapper {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      height: 100dvh;
+      position: relative;
+      z-index: 1;
+      overflow: hidden;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+
+    .page-wrapper.visible {
+      opacity: 1;
+    }
+
+    /* Header */
+    .header {
+      padding: 52px 20px 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      max-width: 420px;
+      width: 100%;
+      margin: 0 auto;
+      flex-shrink: 0;
+      touch-action: none;
+      background: rgba(45, 31, 53, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      position: relative;
+      z-index: 10;
+    }
+
+    .back-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: rgba(255, 255, 255, 0.6);
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: transform 0.15s;
+    }
+
+    .back-btn:active { transform: scale(0.92); }
+
+    .header-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-weight: 300;
+      font-size: 22px;
+      color: white;
+      flex: 1;
+      text-align: center;
+    }
+
+    .header-spacer {
+      width: 44px;
+      flex-shrink: 0;
+    }
+
+    /* Container */
+    .container {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 0 20px 40px;
+      max-width: 420px;
+      width: 100%;
+      margin: 0 auto;
+      touch-action: pan-y;
+      overscroll-behavior: contain;
+    }
+
+    /* Animations */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .fade-up {
+      opacity: 0;
+      animation: fadeUp 0.5s ease forwards;
+    }
+
+    .fade-up-1 { animation-delay: 0.05s; }
+    .fade-up-2 { animation-delay: 0.1s; }
+    .fade-up-3 { animation-delay: 0.15s; }
+    .fade-up-4 { animation-delay: 0.2s; }
+    .fade-up-5 { animation-delay: 0.25s; }
+    .fade-up-6 { animation-delay: 0.3s; }
+
+    /* Phase Context Banner */
+    .phase-banner {
+      background: rgba(201, 184, 232, 0.08);
+      border: 1px solid rgba(201, 184, 232, 0.2);
+      border-radius: 16px;
+      padding: 14px 18px;
+      margin-bottom: 20px;
+    }
+
+    .phase-banner-text {
+      font-size: 13px;
+      font-weight: 300;
+      line-height: 1.5;
+      color: var(--lavender);
+    }
+
+    .phase-banner-label {
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--lavender);
+      opacity: 0.6;
+      margin-bottom: 6px;
+    }
+
+    /* Card */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 22px;
+      margin-bottom: 16px;
+      backdrop-filter: blur(10px);
+    }
+
+    .card-label {
+      font-size: 13px;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.6);
+      margin-bottom: 18px;
+      letter-spacing: 0.3px;
+    }
+
+    /* Hours Stepper */
+    .stepper-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+    }
+
+    .stepper-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.15s, background 0.2s;
+      user-select: none;
+    }
+
+    .stepper-btn:active {
+      transform: scale(0.9);
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .stepper-btn:disabled {
+      opacity: 0.25;
+      cursor: default;
+    }
+
+    .stepper-btn:disabled:active {
+      transform: none;
+      background: var(--card);
+    }
+
+    .hours-display {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 64px;
+      font-weight: 300;
+      font-style: italic;
+      color: white;
+      line-height: 1;
+      min-width: 120px;
+      text-align: center;
+      user-select: none;
+    }
+
+    .hours-unit {
+      font-size: 20px;
+      font-style: normal;
+      color: rgba(255, 255, 255, 0.4);
+      margin-left: 4px;
+    }
+
+    /* Quality Cards */
+    .quality-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .quality-option {
+      flex: 1;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: transform 0.15s, background 0.2s, border-color 0.2s, box-shadow 0.2s;
+      min-height: 44px;
+      user-select: none;
+    }
+
+    .quality-option:active {
+      transform: scale(0.95);
+    }
+
+    .quality-option .quality-emoji {
+      font-size: 26px;
+      line-height: 1;
+    }
+
+    .quality-option .quality-text {
+      font-size: 12px;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.5);
+      letter-spacing: 0.3px;
+    }
+
+    .quality-option.selected-poor {
+      background: rgba(232, 165, 176, 0.15);
+      border-color: rgba(232, 165, 176, 0.4);
+      box-shadow: 0 0 16px rgba(232, 165, 176, 0.1);
+    }
+
+    .quality-option.selected-poor .quality-text {
+      color: var(--rose);
+    }
+
+    .quality-option.selected-okay {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .quality-option.selected-okay .quality-text {
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .quality-option.selected-good {
+      background: rgba(201, 184, 232, 0.15);
+      border-color: rgba(201, 184, 232, 0.4);
+      box-shadow: 0 0 16px rgba(201, 184, 232, 0.1);
+    }
+
+    .quality-option.selected-good .quality-text {
+      color: var(--lavender);
+    }
+
+    /* Notes Input */
+    .notes-input {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 16px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 300;
+      color: white;
+      outline: none;
+      -webkit-appearance: none;
+      transition: border-color 0.3s ease;
+      margin-bottom: 16px;
+    }
+
+    .notes-input::placeholder {
+      color: rgba(255, 255, 255, 0.25);
+      font-style: italic;
+    }
+
+    .notes-input:focus {
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    /* Submit Button */
+    .submit-btn {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 16px;
+      background: linear-gradient(135deg, var(--lavender), var(--rose));
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--deep);
+      cursor: pointer;
+      transition: transform 0.15s, opacity 0.3s;
+      min-height: 44px;
+      letter-spacing: 0.5px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .submit-btn:active {
+      transform: scale(0.97);
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.35;
+      cursor: default;
+    }
+
+    .submit-btn:disabled:active {
+      transform: none;
+    }
+
+    .submit-btn .btn-text {
+      transition: opacity 0.2s;
+    }
+
+    .submit-btn.loading .btn-text {
+      opacity: 0;
+    }
+
+    .submit-btn .spinner {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .submit-btn.loading .spinner {
+      opacity: 1;
+    }
+
+    .spinner-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--deep);
+      margin: 0 3px;
+      animation: spinnerBounce 1.2s ease-in-out infinite;
+    }
+
+    .spinner-dot:nth-child(2) { animation-delay: 0.15s; }
+    .spinner-dot:nth-child(3) { animation-delay: 0.3s; }
+
+    @keyframes spinnerBounce {
+      0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Result Card */
+    .result-card {
+      background: linear-gradient(135deg, rgba(201, 184, 232, 0.12), rgba(232, 165, 176, 0.08));
+      border: 1px solid rgba(201, 184, 232, 0.2);
+      border-radius: 20px;
+      padding: 24px;
+      margin-top: 20px;
+      transform: translateY(20px);
+      opacity: 0;
+      transition: transform 0.5s ease, opacity 0.5s ease;
+      display: none;
+    }
+
+    .result-card.visible {
+      display: block;
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .result-card.error {
+      border-color: rgba(232, 165, 176, 0.3);
+    }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .kira-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--lavender), var(--rose));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .kira-label {
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.4);
+    }
+
+    .personalised-badge {
+      display: inline-block;
+      background: rgba(201, 184, 232, 0.15);
+      border: 1px solid rgba(201, 184, 232, 0.25);
+      border-radius: 12px;
+      padding: 4px 10px;
+      font-size: 10px;
+      letter-spacing: 1px;
+      color: var(--lavender);
+      margin-bottom: 12px;
+    }
+
+    .result-insight {
+      font-size: 14px;
+      font-weight: 300;
+      line-height: 1.6;
+      color: rgba(255, 255, 255, 0.85);
+      margin-bottom: 16px;
+    }
+
+    .result-divider {
+      height: 1px;
+      background: var(--border);
+      margin-bottom: 16px;
+    }
+
+    .result-tip-label {
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--lavender);
+      opacity: 0.6;
+      margin-bottom: 8px;
+    }
+
+    .result-tip {
+      font-size: 14px;
+      font-weight: 300;
+      line-height: 1.6;
+      color: rgba(255, 255, 255, 0.75);
+      margin-bottom: 20px;
+    }
+
+    .reset-btn {
+      width: 100%;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--card);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.7);
+      cursor: pointer;
+      transition: transform 0.15s, background 0.2s;
+      min-height: 44px;
+    }
+
+    .reset-btn:active {
+      transform: scale(0.97);
+      background: rgba(255, 255, 255, 0.14);
+    }
+
+    /* Recent Logs */
+    .recent-section {
+      margin-top: 28px;
+    }
+
+    .section-title {
+      font-size: 10px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.35);
+      margin-bottom: 12px;
+    }
+
+    .recent-row {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .recent-row::-webkit-scrollbar { display: none; }
+
+    .recent-card {
+      flex-shrink: 0;
+      min-width: 120px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .recent-date {
+      font-size: 11px;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.4);
+      letter-spacing: 0.5px;
+    }
+
+    .recent-hours {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 26px;
+      font-weight: 300;
+      font-style: italic;
+      color: white;
+      line-height: 1;
+    }
+
+    .recent-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 2px;
+    }
+
+    .recent-quality {
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .recent-phase {
+      font-size: 9px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 10px;
+      background: rgba(201, 184, 232, 0.15);
+      color: var(--lavender);
+    }
+
+    .empty-state {
+      font-size: 13px;
+      font-weight: 300;
+      color: rgba(255, 255, 255, 0.3);
+      font-style: italic;
+      padding: 12px 0;
+    }
+
+    /* Error text */
+    .error-text {
+      color: var(--rose);
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Loading Screen -->
+  <div class="loading-screen" id="loadingScreen">
+    <div class="loading-avatar">&#10022;</div>
+    <div class="loading-text">Kira</div>
+  </div>
+
+  <!-- Page Wrapper -->
+  <div class="page-wrapper" id="pageWrapper">
+
+    <!-- Header -->
+    <div class="header">
+      <button class="back-btn" onclick="window.AppInventor.setWebViewString('navigate:home')">&#8592;</button>
+      <div class="header-title">Sleep</div>
+      <div class="header-spacer"></div>
+    </div>
+
+    <!-- Scrollable Container -->
+    <div class="container" id="mainContainer">
+
+      <!-- Phase Context Banner -->
+      <div class="phase-banner fade-up fade-up-1" id="phaseBanner" style="display:none;">
+        <div class="phase-banner-label" id="phaseBannerLabel"></div>
+        <div class="phase-banner-text" id="phaseBannerText"></div>
+      </div>
+
+      <!-- Hours Slept -->
+      <div class="card fade-up fade-up-2">
+        <div class="card-label">How many hours did you sleep?</div>
+        <div class="stepper-row">
+          <button class="stepper-btn" id="btnMinus" onclick="adjustHours(-0.5)">&#8722;</button>
+          <div class="hours-display" id="hoursDisplay">7<span class="hours-unit">hrs</span></div>
+          <button class="stepper-btn" id="btnPlus" onclick="adjustHours(0.5)">+</button>
+        </div>
+      </div>
+
+      <!-- Sleep Quality -->
+      <div class="card fade-up fade-up-3">
+        <div class="card-label">How would you rate the quality?</div>
+        <div class="quality-row">
+          <div class="quality-option" id="qPoor" onclick="selectQuality('poor')">
+            <span class="quality-emoji">&#128564;</span>
+            <span class="quality-text">Poor</span>
+          </div>
+          <div class="quality-option" id="qOkay" onclick="selectQuality('okay')">
+            <span class="quality-emoji">&#128524;</span>
+            <span class="quality-text">Okay</span>
+          </div>
+          <div class="quality-option" id="qGood" onclick="selectQuality('good')">
+            <span class="quality-emoji">&#127769;</span>
+            <span class="quality-text">Good</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <input class="notes-input fade-up fade-up-4" id="notesInput" type="text" placeholder="Anything else? (optional)" autocomplete="off">
+
+      <!-- Submit -->
+      <button class="submit-btn fade-up fade-up-5" id="submitBtn" disabled onclick="submitSleep()">
+        <span class="btn-text">Log sleep</span>
+        <div class="spinner">
+          <div class="spinner-dot"></div>
+          <div class="spinner-dot"></div>
+          <div class="spinner-dot"></div>
+        </div>
+      </button>
+
+      <!-- Result Card -->
+      <div class="result-card" id="resultCard">
+        <div class="result-header">
+          <div class="kira-avatar">&#10022;</div>
+          <div class="kira-label">Kira says</div>
+        </div>
+        <div class="personalised-badge" id="personalisedBadge" style="display:none;">Based on your patterns &#10022;</div>
+        <div class="result-insight" id="resultInsight"></div>
+        <div class="result-divider"></div>
+        <div class="result-tip-label">Tonight, try:</div>
+        <div class="result-tip" id="resultTip"></div>
+        <button class="reset-btn" onclick="resetForm()">Log another</button>
+      </div>
+
+      <!-- Recent Logs -->
+      <div class="recent-section fade-up fade-up-6" id="recentSection">
+        <div class="section-title">Recent</div>
+        <div id="recentContent">
+          <div class="empty-state">Your sleep history will appear here</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // Theme + backend + user
+    (function(){var t=localStorage.getItem('kira_theme'),c={'default':'#2d1f35','midnight':'#1a1a2e','warm':'#2d2025'};if(t&&c[t])document.documentElement.style.setProperty('--deep',c[t]);})();
+    var BACKEND = 'https://kira-backend-lcwr.onrender.com';
+    var USER_ID = (function() {
+      try { var ws = window.AppInventor.getWebViewString(); if (ws && ws.indexOf('user:') === 0) return ws.split(':')[1]; } catch(e) {}
+      return localStorage.getItem('kira_user') || 'user_1';
+    })();
+
+    // State
+    var currentHours = 7;
+    var selectedQuality = null;
+    var currentPhase = '';
+    var cycleDay = 0;
+    var recentLogs = [];
+
+    // Phase sleep messages
+    var PHASE_MESSAGES = {
+      menstrual: 'Low progesterone may cause lighter, more disrupted sleep',
+      follicular: 'Rising estrogen typically supports deeper, more restorative sleep',
+      ovulatory: 'Sleep is usually at its best this week',
+      luteal: 'Progesterone drop before your period can cause restless nights and vivid dreams'
+    };
+
+    var QUALITY_ICONS = { poor: '\u{1F634}', okay: '\u{1F60C}', good: '\u{1F319}' };
+
+    // Init
+    async function init() {
+      var loaded = false;
+
+      try {
+        var res = await fetch(BACKEND + '/cycle_status?user_id=' + encodeURIComponent(USER_ID));
+        if (res.ok) {
+          var data = await res.json();
+          currentPhase = (data.phase || '').toLowerCase();
+          cycleDay = data.cycle_day || 0;
+
+          if (currentPhase && PHASE_MESSAGES[currentPhase]) {
+            var banner = document.getElementById('phaseBanner');
+            document.getElementById('phaseBannerLabel').textContent = currentPhase + ' phase \u2022 day ' + cycleDay;
+            document.getElementById('phaseBannerText').textContent = PHASE_MESSAGES[currentPhase];
+            banner.style.display = '';
+          }
+        }
+      } catch (e) {
+        console.error('Cycle status fetch failed:', e);
+      }
+
+      showPage();
+      loadRecentLogs();
+    }
+
+    function showPage() {
+      document.getElementById('loadingScreen').classList.add('hidden');
+      document.getElementById('pageWrapper').classList.add('visible');
+    }
+
+    // Hours stepper
+    function adjustHours(delta) {
+      var next = currentHours + delta;
+      if (next < 0 || next > 12) return;
+      currentHours = next;
+      updateHoursDisplay();
+    }
+
+    function updateHoursDisplay() {
+      var display = document.getElementById('hoursDisplay');
+      var numStr = currentHours % 1 === 0 ? String(currentHours) : currentHours.toFixed(1);
+      display.innerHTML = numStr + '<span class="hours-unit">hrs</span>';
+      document.getElementById('btnMinus').disabled = currentHours <= 0;
+      document.getElementById('btnPlus').disabled = currentHours >= 12;
+    }
+
+    // Quality selection
+    function selectQuality(q) {
+      selectedQuality = q;
+      var options = ['poor', 'okay', 'good'];
+      options.forEach(function(opt) {
+        var el = document.getElementById('q' + opt.charAt(0).toUpperCase() + opt.slice(1));
+        el.className = 'quality-option' + (opt === q ? ' selected-' + opt : '');
+      });
+      document.getElementById('submitBtn').disabled = false;
+    }
+
+    // Submit
+    async function submitSleep() {
+      if (!selectedQuality) return;
+
+      var btn = document.getElementById('submitBtn');
+      btn.classList.add('loading');
+      btn.disabled = true;
+
+      var payload = {
+        hours: currentHours,
+        quality: selectedQuality,
+        notes: document.getElementById('notesInput').value.trim(),
+        phase: currentPhase,
+        cycle_day: cycleDay,
+        user_id: USER_ID
+      };
+
+      try {
+        var res = await fetch(BACKEND + '/log_sleep', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) throw new Error('Server error');
+        var data = await res.json();
+
+        showResult(data);
+        addToRecentLogs(payload);
+      } catch (e) {
+        console.error('Submit failed:', e);
+        showError();
+      }
+
+      btn.classList.remove('loading');
+    }
+
+    function showResult(data) {
+      var card = document.getElementById('resultCard');
+      card.classList.remove('error');
+
+      document.getElementById('resultInsight').textContent = data.insight || 'Sleep logged successfully.';
+      document.getElementById('resultTip').textContent = data.tip || 'Try keeping a consistent bedtime tonight.';
+
+      var badge = document.getElementById('personalisedBadge');
+      badge.style.display = data.personalised ? '' : 'none';
+
+      card.style.display = 'block';
+      // Force reflow then animate
+      void card.offsetWidth;
+      card.classList.add('visible');
+
+      // Scroll to result
+      setTimeout(function() {
+        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 100);
+    }
+
+    function showError() {
+      var card = document.getElementById('resultCard');
+      card.classList.add('error');
+      document.getElementById('resultInsight').innerHTML = '<span class="error-text">Something went wrong. Your data was not lost — please try again.</span>';
+      document.getElementById('resultTip').textContent = '';
+      document.getElementById('personalisedBadge').style.display = 'none';
+      document.querySelector('.result-tip-label').style.display = 'none';
+      document.querySelector('.result-divider').style.display = 'none';
+
+      card.style.display = 'block';
+      void card.offsetWidth;
+      card.classList.add('visible');
+
+      // Re-enable submit so user can retry
+      document.getElementById('submitBtn').disabled = false;
+    }
+
+    // Reset
+    function resetForm() {
+      currentHours = 7;
+      selectedQuality = null;
+      updateHoursDisplay();
+
+      // Clear quality selection
+      ['poor', 'okay', 'good'].forEach(function(opt) {
+        var el = document.getElementById('q' + opt.charAt(0).toUpperCase() + opt.slice(1));
+        el.className = 'quality-option';
+      });
+
+      document.getElementById('notesInput').value = '';
+      document.getElementById('submitBtn').disabled = true;
+
+      // Hide result card
+      var card = document.getElementById('resultCard');
+      card.classList.remove('visible');
+      setTimeout(function() { card.style.display = 'none'; }, 500);
+
+      // Restore tip elements in case they were hidden by error
+      document.querySelector('.result-tip-label').style.display = '';
+      document.querySelector('.result-divider').style.display = '';
+
+      // Scroll to top
+      document.getElementById('mainContainer').scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Recent logs
+    async function loadRecentLogs() {
+      try {
+        var res = await fetch(BACKEND + '/recent_logs?type=sleep&user_id=' + encodeURIComponent(USER_ID) + '&limit=3');
+        if (!res.ok) return;
+        var data = await res.json();
+        recentLogs = data.logs || data || [];
+        renderRecentLogs();
+      } catch (e) {
+        console.error('Recent logs fetch failed:', e);
+      }
+    }
+
+    function addToRecentLogs(entry) {
+      var newLog = {
+        date: new Date().toISOString(),
+        hours: entry.hours,
+        quality: entry.quality,
+        phase: entry.phase
+      };
+      recentLogs.unshift(newLog);
+      if (recentLogs.length > 3) recentLogs.pop();
+      renderRecentLogs();
+    }
+
+    function renderRecentLogs() {
+      var container = document.getElementById('recentContent');
+      if (!recentLogs.length) {
+        container.innerHTML = '<div class="empty-state">Your sleep history will appear here</div>';
+        return;
+      }
+
+      var html = '<div class="recent-row">';
+      recentLogs.forEach(function(log) {
+        var dateStr = formatDate(log.date || log.created_at || log.timestamp);
+        var hrs = log.hours || 0;
+        var hrsStr = hrs % 1 === 0 ? String(hrs) : Number(hrs).toFixed(1);
+        var qualityIcon = QUALITY_ICONS[log.quality] || '';
+        var phase = log.phase || '';
+
+        html += '<div class="recent-card">';
+        html += '<div class="recent-date">' + dateStr + '</div>';
+        html += '<div class="recent-hours">' + hrsStr + ' <span style="font-size:14px;font-family:DM Sans,sans-serif;font-style:normal;color:rgba(255,255,255,0.4);">hrs</span></div>';
+        html += '<div class="recent-meta">';
+        if (qualityIcon) html += '<span class="recent-quality">' + qualityIcon + '</span>';
+        if (phase) html += '<span class="recent-phase">' + phase + '</span>';
+        html += '</div>';
+        html += '</div>';
+      });
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return '';
+      var d = new Date(dateStr);
+      var now = new Date();
+      var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      var target = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      var diff = Math.round((today - target) / 86400000);
+
+      if (diff === 0) return 'Today';
+      if (diff === 1) return 'Yesterday';
+
+      var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return months[d.getMonth()] + ' ' + d.getDate();
+    }
+
+    // Prevent body scroll — allow only inside container
+    var scrollContainer = document.getElementById('mainContainer');
+    document.addEventListener('touchmove', function(e) {
+      var target = e.target;
+      while (target && target !== document.body && target !== document.documentElement) {
+        if (target === scrollContainer) return;
+        target = target.parentNode;
+      }
+      e.preventDefault();
+    }, { passive: false });
+
+    // Keyboard handling
+    var pageWrapper = document.getElementById('pageWrapper');
+    var lastVH = window.innerHeight;
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', function() {
+        var newH = window.visualViewport.height;
+        pageWrapper.style.height = newH + 'px';
+        window.scrollTo(0, 0);
+        document.body.scrollTop = 0;
+        document.documentElement.scrollTop = 0;
+        if (newH < lastVH && document.activeElement === document.getElementById('notesInput')) {
+          document.getElementById('notesInput').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        lastVH = newH;
+      });
+      window.visualViewport.addEventListener('scroll', function() {
+        window.scrollTo(0, 0);
+      });
+    }
+
+    var notesInput = document.getElementById('notesInput');
+    notesInput.addEventListener('focus', function() {
+      setTimeout(function() {
+        window.scrollTo(0, 0);
+        notesInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+    });
+
+    notesInput.addEventListener('blur', function() {
+      setTimeout(function() {
+        window.scrollTo(0, 0);
+        document.body.scrollTop = 0;
+        document.documentElement.scrollTop = 0;
+      }, 100);
+    });
+
+    // Start
+    init();
+  </script>
+
+</body>
+
+</html>

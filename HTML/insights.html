@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Kira — Insights</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --rose: #e8a5b0;
+      --blush: #f2c4ce;
+      --lavender: #c9b8e8;
+      --deep: #2d1f35;
+      --mid: #4a3558;
+      --card: rgba(255,255,255,0.09);
+      --border: rgba(255,255,255,0.14);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    html {
+      height: 100%;
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: var(--deep);
+      font-family: 'DM Sans', sans-serif;
+      color: white;
+      touch-action: none;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -30%; left: -20%;
+      width: 70%; height: 70%;
+      background: radial-gradient(circle, rgba(201,184,232,0.22) 0%, transparent 70%);
+      pointer-events: none; z-index: 0;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      bottom: -20%; right: -20%;
+      width: 60%; height: 60%;
+      background: radial-gradient(circle, rgba(232,165,176,0.18) 0%, transparent 70%);
+      pointer-events: none; z-index: 0;
+    }
+
+    /* Loading screen */
+    .loading-screen {
+      position: fixed;
+      inset: 0;
+      background: var(--deep);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      transition: opacity 0.5s ease;
+    }
+
+    .loading-screen.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .loading-avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--lavender), var(--rose));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      animation: pulse 1.8s ease-in-out infinite;
+      box-shadow: 0 0 30px rgba(201,184,232,0.3);
+    }
+
+    .loading-text {
+      margin-top: 16px;
+      font-size: 13px;
+      color: rgba(255,255,255,0.4);
+      letter-spacing: 2px;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.08); opacity: 0.7; }
+    }
+
+    .page-wrapper {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100vh;
+      height: 100dvh;
+      position: relative;
+      z-index: 1;
+      overflow: hidden;
+    }
+
+    /* Header */
+    .header {
+      padding: 16px 20px 12px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-shrink: 0;
+      max-width: 420px;
+      width: 100%;
+      margin: 0 auto;
+      background: rgba(45,31,53,0.92);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      touch-action: none;
+    }
+
+    .back-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: rgba(255,255,255,0.6);
+      cursor: pointer;
+      flex-shrink: 0;
+      backdrop-filter: blur(10px);
+      transition: transform 0.15s;
+    }
+
+    .back-btn:active { transform: scale(0.92); }
+
+    .header-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 32px;
+      font-weight: 300;
+      font-style: italic;
+      color: white;
+      line-height: 1;
+    }
+
+    /* Scrollable Content */
+    .container {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-y;
+      overscroll-behavior: contain;
+      padding: 0 20px 32px;
+      max-width: 420px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* Section Cards */
+    .section-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 20px;
+      margin-top: 16px;
+      backdrop-filter: blur(20px);
+      animation: fadeUp 0.4s ease both;
+    }
+
+    .section-card:nth-child(2) { animation-delay: 0.06s; }
+    .section-card:nth-child(3) { animation-delay: 0.12s; }
+    .section-card:nth-child(4) { animation-delay: 0.18s; }
+    .section-card:nth-child(5) { animation-delay: 0.24s; }
+    .section-card:nth-child(6) { animation-delay: 0.30s; }
+
+    .section-label {
+      font-size: 10px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--lavender);
+      opacity: 0.7;
+      margin-bottom: 4px;
+    }
+
+    .section-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px;
+      font-weight: 300;
+      font-style: italic;
+      color: white;
+      margin-bottom: 16px;
+      line-height: 1.2;
+    }
+
+    /* Mood Bar Chart */
+    .mood-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      height: 120px;
+      padding-top: 8px;
+    }
+
+    .mood-bar-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100%;
+      justify-content: flex-end;
+      gap: 6px;
+    }
+
+    .mood-bar {
+      width: 100%;
+      border-radius: 8px 8px 4px 4px;
+      min-height: 4px;
+      transition: height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .mood-bar-label {
+      font-size: 10px;
+      color: rgba(255,255,255,0.4);
+      text-align: center;
+      line-height: 1;
+    }
+
+    .mood-bar-value {
+      font-size: 11px;
+      color: rgba(255,255,255,0.7);
+      font-weight: 500;
+    }
+
+    /* Emotion Bars */
+    .emotion-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .emotion-row:last-child { margin-bottom: 0; }
+
+    .emotion-name {
+      font-size: 13px;
+      color: rgba(255,255,255,0.7);
+      min-width: 72px;
+      flex-shrink: 0;
+      text-transform: capitalize;
+    }
+
+    .emotion-bar-track {
+      flex: 1;
+      height: 22px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 11px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .emotion-bar-fill {
+      height: 100%;
+      border-radius: 11px;
+      transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+      display: flex;
+      align-items: center;
+      padding-left: 10px;
+    }
+
+    .emotion-bar-pct {
+      font-size: 11px;
+      color: rgba(255,255,255,0.9);
+      font-weight: 500;
+    }
+
+    /* Intervention list */
+    .intervention-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .intervention-row:last-child { border-bottom: none; }
+
+    .intervention-rank {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(201,184,232,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: var(--lavender);
+      font-weight: 500;
+      flex-shrink: 0;
+    }
+
+    .intervention-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .intervention-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: white;
+      margin-bottom: 2px;
+    }
+
+    .intervention-meta {
+      font-size: 11px;
+      color: rgba(255,255,255,0.35);
+    }
+
+    .star-rating {
+      display: flex;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+
+    .star {
+      font-size: 14px;
+      color: rgba(255,255,255,0.15);
+    }
+
+    .star.filled {
+      color: var(--rose);
+    }
+
+    /* Journal entries */
+    .journal-entry {
+      padding: 14px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      cursor: pointer;
+      min-height: 44px;
+      transition: opacity 0.15s;
+    }
+
+    .journal-entry:active { opacity: 0.7; }
+    .journal-entry:last-child { border-bottom: none; }
+
+    .journal-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+      flex-wrap: wrap;
+    }
+
+    .journal-date {
+      font-size: 12px;
+      color: rgba(255,255,255,0.45);
+    }
+
+    .phase-badge {
+      font-size: 10px;
+      padding: 3px 10px;
+      border-radius: 10px;
+      font-weight: 500;
+      text-transform: capitalize;
+    }
+
+    .phase-badge.menstrual {
+      background: rgba(232,165,176,0.2);
+      color: var(--rose);
+    }
+
+    .phase-badge.follicular {
+      background: rgba(167,217,186,0.2);
+      color: #a7d9ba;
+    }
+
+    .phase-badge.ovulatory {
+      background: rgba(232,213,165,0.2);
+      color: #e8d5a5;
+    }
+
+    .phase-badge.luteal {
+      background: rgba(201,184,232,0.2);
+      color: var(--lavender);
+    }
+
+    .journal-prompt {
+      font-size: 13px;
+      font-style: italic;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 4px;
+      line-height: 1.4;
+    }
+
+    .journal-preview {
+      font-size: 13px;
+      color: rgba(255,255,255,0.7);
+      line-height: 1.5;
+    }
+
+    .journal-preview.truncated::after {
+      content: '...';
+      color: rgba(255,255,255,0.35);
+    }
+
+    .journal-full {
+      display: none;
+      font-size: 13px;
+      color: rgba(255,255,255,0.7);
+      line-height: 1.5;
+    }
+
+    .journal-entry.expanded .journal-preview { display: none; }
+    .journal-entry.expanded .journal-full { display: block; }
+
+    .journal-tap-hint {
+      font-size: 11px;
+      color: rgba(255,255,255,0.25);
+      margin-top: 4px;
+    }
+
+    /* Sleep chart */
+    .sleep-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      height: 100px;
+      padding-top: 8px;
+    }
+
+    .sleep-bar-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100%;
+      justify-content: flex-end;
+      gap: 6px;
+    }
+
+    .sleep-bar {
+      width: 100%;
+      border-radius: 8px 8px 4px 4px;
+      min-height: 4px;
+      background: linear-gradient(to top, var(--lavender), rgba(201,184,232,0.4));
+      transition: height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .sleep-bar-label {
+      font-size: 10px;
+      color: rgba(255,255,255,0.4);
+      text-align: center;
+      line-height: 1;
+    }
+
+    .sleep-bar-value {
+      font-size: 11px;
+      color: rgba(255,255,255,0.7);
+      font-weight: 500;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 20px 10px;
+    }
+
+    .empty-icon {
+      font-size: 28px;
+      margin-bottom: 10px;
+      opacity: 0.4;
+    }
+
+    .empty-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 18px;
+      font-style: italic;
+      font-weight: 300;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 6px;
+    }
+
+    .empty-sub {
+      font-size: 12px;
+      color: rgba(255,255,255,0.3);
+      line-height: 1.5;
+    }
+
+    /* Error state */
+    .error-state {
+      text-align: center;
+      padding: 60px 20px;
+    }
+
+    .error-icon {
+      font-size: 36px;
+      margin-bottom: 16px;
+      opacity: 0.4;
+    }
+
+    .error-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px;
+      font-style: italic;
+      font-weight: 300;
+      color: rgba(255,255,255,0.6);
+      margin-bottom: 8px;
+    }
+
+    .error-sub {
+      font-size: 13px;
+      color: rgba(255,255,255,0.35);
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+
+    .retry-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 12px 32px;
+      border-radius: 22px;
+      background: rgba(201,184,232,0.2);
+      border: 1px solid rgba(201,184,232,0.3);
+      color: var(--lavender);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: transform 0.15s, background 0.2s;
+    }
+
+    .retry-btn:active { transform: scale(0.95); }
+
+    /* Phase info banner */
+    .phase-banner {
+      background: linear-gradient(135deg, rgba(74,53,88,0.85), rgba(45,31,53,0.9));
+      border: 1px solid rgba(201,184,232,0.25);
+      border-radius: 20px;
+      padding: 16px 18px;
+      margin-top: 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      backdrop-filter: blur(20px);
+      animation: fadeUp 0.4s ease both;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .phase-banner::after {
+      content: '';
+      position: absolute;
+      top: -30px; right: -30px;
+      width: 100px; height: 100px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(201,184,232,0.15), transparent 70%);
+      pointer-events: none;
+    }
+
+    .phase-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--lavender), var(--rose));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+      flex-shrink: 0;
+    }
+
+    .phase-info {
+      flex: 1;
+    }
+
+    .phase-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: white;
+      text-transform: capitalize;
+      margin-bottom: 2px;
+    }
+
+    .phase-detail {
+      font-size: 12px;
+      color: rgba(255,255,255,0.45);
+      line-height: 1.4;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Loading screen -->
+  <div class="loading-screen" id="loadingScreen">
+    <div class="loading-avatar">✦</div>
+    <div class="loading-text">Loading insights...</div>
+  </div>
+
+  <div class="page-wrapper">
+
+    <div class="header">
+      <div class="back-btn" onclick="navigate('home')">←</div>
+      <div class="header-title">Insights</div>
+    </div>
+
+    <div class="container" id="container">
+      <!-- Content injected by JS -->
+    </div>
+
+  </div>
+
+  <script>
+    // Apply saved theme
+    (function(){var t=localStorage.getItem('kira_theme'),c={'default':'#2d1f35','midnight':'#1a1a2e','warm':'#2d2025'};if(t&&c[t])document.documentElement.style.setProperty('--deep',c[t]);})();
+
+    var BACKEND = 'https://kira-backend-lcwr.onrender.com';
+    var USER_ID = (function() {
+      try { var ws = window.AppInventor.getWebViewString(); if (ws && ws.indexOf('user:') === 0) return ws.split(':')[1]; } catch(e) {}
+      return localStorage.getItem('kira_user') || 'user_1';
+    })();
+
+    // Expected /insights response:
+    // { emotion_history: [{date, emotion, mood_rating}],
+    //   sleep_history: [{date, hours, quality}],
+    //   journal_entries: [{date, prompt, entry, phase}],
+    //   intervention_stats: [{name, avg_rating, times_used}],
+    //   mood_trend: [{week, avg_rating}] }
+
+    var insightsData = null;
+    var homeData = null;
+    var interventionData = null;
+    var fetchErrors = 0;
+    var totalFetches = 3;
+    var completedFetches = 0;
+
+    // Navigation
+    var navigating = false;
+    function navigate(screen) {
+      if (navigating) return;
+      navigating = true;
+      try {
+        window.AppInventor.setWebViewString('navigate:' + screen);
+      } catch (e) {
+        navigating = false;
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // Fetch all data
+    function fetchAll() {
+      fetchErrors = 0;
+      completedFetches = 0;
+      insightsData = null;
+      homeData = null;
+      interventionData = null;
+
+      // 1. Insights endpoint (new, may not exist)
+      fetch(BACKEND + '/insights?user_id=' + USER_ID)
+        .then(function(res) {
+          if (!res.ok) throw new Error('Not found');
+          return res.json();
+        })
+        .then(function(data) { insightsData = data; })
+        .catch(function() { insightsData = null; })
+        .finally(function() { onFetchDone(); });
+
+      // 2. Home data (for phase info)
+      fetch(BACKEND + '/home_data?user_id=' + USER_ID)
+        .then(function(res) {
+          if (!res.ok) throw new Error('Network error');
+          return res.json();
+        })
+        .then(function(data) { homeData = data; })
+        .catch(function() { homeData = null; fetchErrors++; })
+        .finally(function() { onFetchDone(); });
+
+      // 3. Intervention library
+      fetch(BACKEND + '/intervention_library?user_id=' + USER_ID)
+        .then(function(res) {
+          if (!res.ok) throw new Error('Network error');
+          return res.json();
+        })
+        .then(function(data) { interventionData = data; })
+        .catch(function() { interventionData = null; fetchErrors++; })
+        .finally(function() { onFetchDone(); });
+    }
+
+    function onFetchDone() {
+      completedFetches++;
+      if (completedFetches < totalFetches) return;
+
+      hideLoading();
+
+      // If all existing endpoints failed, show error
+      if (!homeData && !interventionData && !insightsData) {
+        showError();
+        return;
+      }
+
+      renderInsights();
+    }
+
+    function hideLoading() {
+      var el = document.getElementById('loadingScreen');
+      el.classList.add('hidden');
+      setTimeout(function() { el.style.display = 'none'; }, 500);
+    }
+
+    function showError() {
+      var container = document.getElementById('container');
+      container.innerHTML =
+        '<div class="error-state">' +
+          '<div class="error-icon">✦</div>' +
+          '<div class="error-title">Something went wrong</div>' +
+          '<div class="error-sub">We couldn\'t load your insights right now.<br>Please check your connection and try again.</div>' +
+          '<button class="retry-btn" onclick="retryFetch()">Try again</button>' +
+        '</div>';
+    }
+
+    function retryFetch() {
+      var container = document.getElementById('container');
+      container.innerHTML = '';
+      var ls = document.getElementById('loadingScreen');
+      ls.style.display = 'flex';
+      ls.classList.remove('hidden');
+      fetchAll();
+    }
+
+    // ── Render ──
+    function renderInsights() {
+      var html = '';
+
+      // Phase banner
+      html += renderPhaseBanner();
+
+      // Mood Trend
+      html += renderMoodTrend();
+
+      // Emotion Breakdown
+      html += renderEmotionBreakdown();
+
+      // Top Interventions
+      html += renderTopInterventions();
+
+      // Journal Entries
+      html += renderJournalEntries();
+
+      // Sleep Pattern
+      html += renderSleepPattern();
+
+      document.getElementById('container').innerHTML = html;
+    }
+
+    // ── Phase Banner ──
+    function renderPhaseBanner() {
+      if (!homeData || !homeData.phase) return '';
+
+      var phaseEmojis = {
+        menstrual: '🌙',
+        follicular: '🌱',
+        ovulatory: '✨',
+        luteal: '🍂'
+      };
+
+      return '<div class="phase-banner">' +
+        '<div class="phase-icon">' + (phaseEmojis[homeData.phase] || '✦') + '</div>' +
+        '<div class="phase-info">' +
+          '<div class="phase-name">' + escapeHtml(homeData.phase) + ' Phase</div>' +
+          '<div class="phase-detail">Day ' + (homeData.cycle_day || '—') + ' of your cycle</div>' +
+        '</div>' +
+      '</div>';
+    }
+
+    // ── Mood Trend ──
+    function renderMoodTrend() {
+      var moodData = null;
+
+      // Try insights data first
+      if (insightsData && insightsData.emotion_history && insightsData.emotion_history.length > 0) {
+        var history = insightsData.emotion_history.slice(-7);
+        moodData = [];
+        for (var i = 0; i < history.length; i++) {
+          moodData.push({
+            label: formatDayLabel(history[i].date),
+            rating: history[i].mood_rating || 0
+          });
+        }
+      }
+
+      // Try mood_trend as fallback
+      if (!moodData && insightsData && insightsData.mood_trend && insightsData.mood_trend.length > 0) {
+        moodData = [];
+        var trends = insightsData.mood_trend.slice(-7);
+        for (var j = 0; j < trends.length; j++) {
+          moodData.push({
+            label: 'Wk ' + (j + 1),
+            rating: trends[j].avg_rating || 0
+          });
+        }
+      }
+
+      var html = '<div class="section-card">';
+      html += '<div class="section-label">WEEKLY</div>';
+      html += '<div class="section-title">Mood Trend</div>';
+
+      if (!moodData || moodData.length === 0) {
+        html += '<div class="empty-state">' +
+          '<div class="empty-icon">📊</div>' +
+          '<div class="empty-title">Start logging to see trends</div>' +
+          '<div class="empty-sub">Your mood patterns will appear here<br>as you chat with Kira</div>' +
+        '</div>';
+      } else {
+        html += '<div class="mood-chart">';
+        for (var k = 0; k < moodData.length; k++) {
+          var rating = Math.min(10, Math.max(0, moodData[k].rating));
+          var pct = (rating / 10) * 100;
+          var barColor = rating >= 6 ? 'var(--lavender)' : rating >= 4 ? 'var(--blush)' : 'var(--rose)';
+          html += '<div class="mood-bar-col">';
+          html += '<div class="mood-bar-value">' + rating + '</div>';
+          html += '<div class="mood-bar" style="height:' + Math.max(4, pct) + '%;background:' + barColor + '"></div>';
+          html += '<div class="mood-bar-label">' + escapeHtml(moodData[k].label) + '</div>';
+          html += '</div>';
+        }
+        html += '</div>';
+      }
+
+      html += '</div>';
+      return html;
+    }
+
+    // ── Emotion Breakdown ──
+    function renderEmotionBreakdown() {
+      var emotionCounts = {};
+      var totalEmotions = 0;
+
+      // From insights data
+      if (insightsData && insightsData.emotion_history) {
+        for (var i = 0; i < insightsData.emotion_history.length; i++) {
+          var em = insightsData.emotion_history[i].emotion;
+          if (em) {
+            emotionCounts[em] = (emotionCounts[em] || 0) + 1;
+            totalEmotions++;
+          }
+        }
+      }
+
+      // From home_data tendencies as fallback display
+      if (totalEmotions === 0 && homeData && homeData.tendencies && homeData.tendencies.length > 0) {
+        // Use tendencies as a proxy — show them as equal-weight items
+        for (var t = 0; t < homeData.tendencies.length; t++) {
+          emotionCounts[homeData.tendencies[t]] = 1;
+          totalEmotions++;
+        }
+      }
+
+      var barColors = [
+        'rgba(201,184,232,0.7)',
+        'rgba(232,165,176,0.7)',
+        'rgba(242,196,206,0.7)',
+        'rgba(167,217,186,0.7)',
+        'rgba(232,213,165,0.7)',
+        'rgba(165,200,232,0.7)'
+      ];
+
+      var html = '<div class="section-card">';
+      html += '<div class="section-label">PATTERNS</div>';
+      html += '<div class="section-title">Emotion Breakdown</div>';
+
+      if (totalEmotions === 0) {
+        html += '<div class="empty-state">' +
+          '<div class="empty-icon">💜</div>' +
+          '<div class="empty-title">No emotions logged yet</div>' +
+          '<div class="empty-sub">Tell Kira how you feel and your<br>patterns will show up here</div>' +
+        '</div>';
+      } else {
+        // Sort by count descending, top 6
+        var sorted = Object.keys(emotionCounts).sort(function(a, b) {
+          return emotionCounts[b] - emotionCounts[a];
+        }).slice(0, 6);
+
+        for (var j = 0; j < sorted.length; j++) {
+          var name = sorted[j];
+          var count = emotionCounts[name];
+          var pct = Math.round((count / totalEmotions) * 100);
+          var color = barColors[j % barColors.length];
+          html += '<div class="emotion-row">';
+          html += '<div class="emotion-name">' + escapeHtml(name) + '</div>';
+          html += '<div class="emotion-bar-track">';
+          html += '<div class="emotion-bar-fill" style="width:' + Math.max(8, pct) + '%;background:' + color + '">';
+          html += '<span class="emotion-bar-pct">' + pct + '%</span>';
+          html += '</div>';
+          html += '</div>';
+          html += '</div>';
+        }
+      }
+
+      html += '</div>';
+      return html;
+    }
+
+    // ── Top Interventions ──
+    function renderTopInterventions() {
+      var interventions = [];
+
+      // From insights data
+      if (insightsData && insightsData.intervention_stats) {
+        interventions = insightsData.intervention_stats.slice().sort(function(a, b) {
+          return (b.avg_rating || 0) - (a.avg_rating || 0);
+        });
+      }
+
+      // Fallback: extract from intervention_library
+      if (interventions.length === 0 && interventionData) {
+        var categories = Object.keys(interventionData);
+        for (var c = 0; c < categories.length; c++) {
+          var items = interventionData[categories[c]];
+          if (Array.isArray(items)) {
+            for (var i = 0; i < items.length; i++) {
+              if (items[i].user_rating !== null && items[i].user_rating !== undefined && items[i].user_rating > 0) {
+                interventions.push({
+                  name: items[i].name,
+                  avg_rating: items[i].user_rating,
+                  times_used: items[i].times_used || 0
+                });
+              }
+            }
+          }
+        }
+        interventions.sort(function(a, b) {
+          return (b.avg_rating || 0) - (a.avg_rating || 0);
+        });
+      }
+
+      var html = '<div class="section-card">';
+      html += '<div class="section-label">TOOLKIT</div>';
+      html += '<div class="section-title">Top Interventions</div>';
+
+      if (interventions.length === 0) {
+        html += '<div class="empty-state">' +
+          '<div class="empty-icon">✦</div>' +
+          '<div class="empty-title">No ratings yet</div>' +
+          '<div class="empty-sub">Try some interventions and rate them<br>to see what works best for you</div>' +
+        '</div>';
+      } else {
+        var top = interventions.slice(0, 5);
+        for (var k = 0; k < top.length; k++) {
+          var item = top[k];
+          var rating = Math.round(item.avg_rating || 0);
+          html += '<div class="intervention-row">';
+          html += '<div class="intervention-rank">' + (k + 1) + '</div>';
+          html += '<div class="intervention-info">';
+          html += '<div class="intervention-name">' + escapeHtml(item.name) + '</div>';
+          html += '<div class="intervention-meta">Used ' + (item.times_used || 0) + ' time' + ((item.times_used || 0) !== 1 ? 's' : '') + '</div>';
+          html += '</div>';
+          html += '<div class="star-rating">';
+          for (var s = 1; s <= 5; s++) {
+            html += '<span class="star' + (s <= rating ? ' filled' : '') + '">★</span>';
+          }
+          html += '</div>';
+          html += '</div>';
+        }
+      }
+
+      html += '</div>';
+      return html;
+    }
+
+    // ── Journal Entries ──
+    function renderJournalEntries() {
+      var entries = [];
+
+      if (insightsData && insightsData.journal_entries && insightsData.journal_entries.length > 0) {
+        entries = insightsData.journal_entries.slice().sort(function(a, b) {
+          return new Date(b.date) - new Date(a.date);
+        });
+      }
+
+      var html = '<div class="section-card">';
+      html += '<div class="section-label">REFLECTIONS</div>';
+      html += '<div class="section-title">Journal Entries</div>';
+
+      if (entries.length === 0) {
+        html += '<div class="empty-state">' +
+          '<div class="empty-icon">📓</div>' +
+          '<div class="empty-title">Your journal is empty</div>' +
+          '<div class="empty-sub">Start journaling with Kira to build<br>a record of your reflections</div>' +
+        '</div>';
+      } else {
+        for (var i = 0; i < entries.length; i++) {
+          var entry = entries[i];
+          var entryText = entry.entry || '';
+          var preview = entryText.length > 100 ? entryText.substring(0, 100) : entryText;
+          var isTruncated = entryText.length > 100;
+          var phase = entry.phase || '';
+
+          html += '<div class="journal-entry" onclick="toggleJournal(this)">';
+          html += '<div class="journal-header">';
+          html += '<div class="journal-date">' + escapeHtml(formatDate(entry.date)) + '</div>';
+          if (phase) {
+            html += '<div class="phase-badge ' + escapeHtml(phase) + '">' + escapeHtml(phase) + '</div>';
+          }
+          html += '</div>';
+          if (entry.prompt) {
+            html += '<div class="journal-prompt">"' + escapeHtml(entry.prompt) + '"</div>';
+          }
+          html += '<div class="journal-preview' + (isTruncated ? ' truncated' : '') + '">' + escapeHtml(preview) + '</div>';
+          if (isTruncated) {
+            html += '<div class="journal-full">' + escapeHtml(entryText) + '</div>';
+            html += '<div class="journal-tap-hint">Tap to read more</div>';
+          }
+          html += '</div>';
+        }
+      }
+
+      html += '</div>';
+      return html;
+    }
+
+    // ── Sleep Pattern ──
+    function renderSleepPattern() {
+      var sleepData = null;
+
+      if (insightsData && insightsData.sleep_history && insightsData.sleep_history.length > 0) {
+        var history = insightsData.sleep_history.slice(-7);
+        sleepData = [];
+        for (var i = 0; i < history.length; i++) {
+          sleepData.push({
+            label: formatDayLabel(history[i].date),
+            hours: history[i].hours || 0
+          });
+        }
+      }
+
+      var html = '<div class="section-card">';
+      html += '<div class="section-label">REST</div>';
+      html += '<div class="section-title">Sleep Pattern</div>';
+
+      if (!sleepData || sleepData.length === 0) {
+        // Show average from home_data if available
+        var avgNote = '';
+        if (homeData && homeData.sleep && homeData.sleep.average_hours) {
+          avgNote = '<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:8px;">Your current phase average: ' + homeData.sleep.average_hours + 'h</div>';
+        }
+        html += '<div class="empty-state">' +
+          '<div class="empty-icon">😴</div>' +
+          '<div class="empty-title">No sleep data yet</div>' +
+          '<div class="empty-sub">Log your sleep to see patterns<br>across your cycle</div>' +
+          avgNote +
+        '</div>';
+      } else {
+        var maxHours = 12;
+        html += '<div class="sleep-chart">';
+        for (var j = 0; j < sleepData.length; j++) {
+          var hours = Math.min(maxHours, Math.max(0, sleepData[j].hours));
+          var pct = (hours / maxHours) * 100;
+          html += '<div class="sleep-bar-col">';
+          html += '<div class="sleep-bar-value">' + hours.toFixed(1) + 'h</div>';
+          html += '<div class="sleep-bar" style="height:' + Math.max(4, pct) + '%"></div>';
+          html += '<div class="sleep-bar-label">' + escapeHtml(sleepData[j].label) + '</div>';
+          html += '</div>';
+        }
+        html += '</div>';
+      }
+
+      html += '</div>';
+      return html;
+    }
+
+    // ── Helpers ──
+    function formatDayLabel(dateStr) {
+      if (!dateStr) return '—';
+      try {
+        var d = new Date(dateStr);
+        var days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        return days[d.getDay()] || '—';
+      } catch (e) {
+        return '—';
+      }
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return '—';
+      try {
+        var d = new Date(dateStr);
+        var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+      } catch (e) {
+        return dateStr;
+      }
+    }
+
+    function toggleJournal(el) {
+      el.classList.toggle('expanded');
+      // Update hint text
+      var hint = el.querySelector('.journal-tap-hint');
+      if (hint) {
+        hint.textContent = el.classList.contains('expanded') ? 'Tap to collapse' : 'Tap to read more';
+      }
+    }
+
+    // ── Prevent body scroll ──
+    var containerEl = document.getElementById('container');
+
+    document.addEventListener('touchmove', function(e) {
+      var target = e.target;
+      while (target && target !== document.body && target !== document.documentElement) {
+        if (target === containerEl) return;
+        target = target.parentNode;
+      }
+      e.preventDefault();
+    }, { passive: false });
+
+    // ── Keyboard fix (for consistency) ──
+    var pageWrapper = document.querySelector('.page-wrapper');
+    var lastViewportHeight = window.innerHeight;
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', function() {
+        var newHeight = window.visualViewport.height;
+        pageWrapper.style.height = newHeight + 'px';
+        window.scrollTo(0, 0);
+        document.body.scrollTop = 0;
+        document.documentElement.scrollTop = 0;
+        lastViewportHeight = newHeight;
+      });
+
+      window.visualViewport.addEventListener('scroll', function() {
+        window.scrollTo(0, 0);
+      });
+    }
+
+    // ── Init ──
+    fetchAll();
+  </script>
+</body>
+</html>
