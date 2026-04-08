@@ -660,12 +660,12 @@
           <div class="grid-title">Nutrition</div>
           <div class="grid-sub">Track cravings & meals</div>
         </div>
-        <div class="grid-card" style="background:linear-gradient(135deg,rgba(201,184,232,0.18),rgba(176,154,181,0.12));border-color:rgba(201,184,232,0.18);" onclick="navigate('interventions')">
+        <div class="grid-card" id="toolkitCard" style="background:linear-gradient(135deg,rgba(201,184,232,0.18),rgba(176,154,181,0.12));border-color:rgba(201,184,232,0.18);" onclick="navigate('interventions')">
           <span class="grid-icon">✦</span>
           <div class="grid-title">Toolkit</div>
           <div class="grid-sub">Breathing, grounding & more</div>
         </div>
-        <div class="grid-card" style="background:linear-gradient(135deg,rgba(232,165,176,0.15),rgba(201,184,232,0.12));border-color:rgba(232,165,176,0.15);" onclick="navigate('insights')">
+        <div class="grid-card" id="insightsCard" style="background:linear-gradient(135deg,rgba(232,165,176,0.15),rgba(201,184,232,0.12));border-color:rgba(232,165,176,0.15);" onclick="navigate('insights')">
           <span class="grid-icon">📊</span>
           <div class="grid-title">Insights</div>
           <div class="grid-sub">Your trends & history</div>
@@ -837,11 +837,11 @@
       var text = document.getElementById('checkinText').value.trim();
       var moodLabels = { 1: 'very_low', 2: 'low', 3: 'neutral', 4: 'good', 5: 'great' };
 
-      fetch(BACKEND + '/analyze', {
+      fetch(BACKEND + '/log_checkin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          text: text || ('Mood rating: ' + selectedMoodRating + '/5'),
+          text: text,
           phase: currentPhase || 'unknown',
           cycle_day: currentCycleDay || 0,
           user_id: USER_ID,
@@ -867,6 +867,207 @@
       currentPhase = data.phase || '';
       currentCycleDay = data.cycle_day || 0;
     };
+
+    // ── First-time Tutorial ──
+    (function() {
+      if (localStorage.getItem('kira_tutorial_done')) return;
+
+      // Inject tutorial styles
+      var tutorialStyle = document.createElement('style');
+      tutorialStyle.textContent = [
+        '.tutorial-overlay {',
+        '  position: fixed; inset: 0; z-index: 9998;',
+        '  pointer-events: none; opacity: 0;',
+        '  transition: opacity 0.4s ease;',
+        '}',
+        '.tutorial-overlay.active { opacity: 1; }',
+        '.tutorial-spotlight {',
+        '  position: absolute; z-index: 9998;',
+        '  border-radius: 20px;',
+        '  box-shadow: 0 0 0 9999px rgba(0,0,0,0.6);',
+        '  pointer-events: none;',
+        '  transition: top 0.35s ease, left 0.35s ease, width 0.35s ease, height 0.35s ease;',
+        '}',
+        '.tutorial-tooltip {',
+        '  position: absolute; z-index: 9999;',
+        '  background: #3a2a45;',
+        '  border: 1px solid rgba(255,255,255,0.14);',
+        '  border-radius: 18px;',
+        '  padding: 20px;',
+        '  width: 280px;',
+        '  pointer-events: auto;',
+        '  opacity: 0;',
+        '  transform: translateY(10px);',
+        '  transition: opacity 0.3s ease 0.15s, transform 0.3s ease 0.15s;',
+        '}',
+        '.tutorial-tooltip.visible {',
+        '  opacity: 1; transform: translateY(0);',
+        '}',
+        '.tutorial-step-indicator {',
+        '  font-family: "DM Sans", sans-serif;',
+        '  font-size: 11px; color: rgba(255,255,255,0.35);',
+        '  letter-spacing: 1px; margin-bottom: 8px;',
+        '}',
+        '.tutorial-title {',
+        '  font-family: "Cormorant Garamond", serif;',
+        '  font-size: 22px; font-weight: 300; font-style: italic;',
+        '  color: white; margin-bottom: 6px; line-height: 1.2;',
+        '}',
+        '.tutorial-desc {',
+        '  font-family: "DM Sans", sans-serif;',
+        '  font-size: 13px; color: rgba(255,255,255,0.6);',
+        '  line-height: 1.5; margin-bottom: 16px;',
+        '}',
+        '.tutorial-next-btn {',
+        '  width: 100%; padding: 12px;',
+        '  background: linear-gradient(135deg, #c9b8e8, #e8a5b0);',
+        '  border: none; border-radius: 14px;',
+        '  font-family: "DM Sans", sans-serif;',
+        '  font-size: 14px; font-weight: 500;',
+        '  color: white; cursor: pointer;',
+        '  transition: transform 0.15s;',
+        '}',
+        '.tutorial-next-btn:active { transform: scale(0.97); }',
+        '.tutorial-skip {',
+        '  display: block; text-align: center;',
+        '  margin-top: 10px; font-family: "DM Sans", sans-serif;',
+        '  font-size: 12px; color: rgba(255,255,255,0.3);',
+        '  cursor: pointer; background: none; border: none;',
+        '  text-decoration: underline;',
+        '  text-underline-offset: 2px;',
+        '  pointer-events: auto;',
+        '}',
+        '.tutorial-skip:active { color: rgba(255,255,255,0.5); }'
+      ].join('\n');
+      document.head.appendChild(tutorialStyle);
+
+      var steps = [
+        { selector: '.kira-card', title: 'Talk to Kira', desc: 'Your AI companion is always here to listen. Share how you\'re feeling and get personalised support.' },
+        { selector: '.phase-card', title: 'Your Cycle', desc: 'Track your cycle phases and see how hormones affect your mood, energy, and cravings.' },
+        { selector: '.checkin-card', title: 'Daily Check-in', desc: 'Rate your mood each day \u2014 Kira learns your patterns and personalises everything over time.' },
+        { selector: '.grid-card.sleep', title: 'Track Sleep', desc: 'Log your sleep and get AI insights on how your cycle affects rest.' },
+        { selector: '#toolkitCard', title: 'Your Toolkit', desc: 'Breathing exercises, grounding, journaling and more \u2014 all tailored to how you\'re feeling.' },
+        { selector: '#insightsCard', title: 'Insights', desc: 'See your trends, journal history, and what works best for you over time.' }
+      ];
+
+      var currentStep = 0;
+      var overlay, spotlight, tooltip;
+      var container = document.querySelector('.container');
+
+      function createTutorialDOM() {
+        overlay = document.createElement('div');
+        overlay.className = 'tutorial-overlay';
+
+        spotlight = document.createElement('div');
+        spotlight.className = 'tutorial-spotlight';
+
+        tooltip = document.createElement('div');
+        tooltip.className = 'tutorial-tooltip';
+
+        overlay.appendChild(spotlight);
+        overlay.appendChild(tooltip);
+        document.body.appendChild(overlay);
+      }
+
+      function positionStep(index) {
+        var step = steps[index];
+        var el = document.querySelector(step.selector);
+        if (!el) return;
+
+        // Scroll element into view within the container
+        var containerRect = container.getBoundingClientRect();
+        var elRect = el.getBoundingClientRect();
+        var pad = 8;
+
+        // If element is below visible area or above, scroll it
+        if (elRect.bottom > containerRect.bottom || elRect.top < containerRect.top) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        // Recalc after potential scroll
+        setTimeout(function() {
+          var rect = el.getBoundingClientRect();
+          var sp = 8; // spotlight padding
+
+          spotlight.style.top = (rect.top - sp) + 'px';
+          spotlight.style.left = (rect.left - sp) + 'px';
+          spotlight.style.width = (rect.width + sp * 2) + 'px';
+          spotlight.style.height = (rect.height + sp * 2) + 'px';
+
+          // Build tooltip content
+          var isLast = index === steps.length - 1;
+          tooltip.innerHTML =
+            '<div class="tutorial-step-indicator">' + (index + 1) + ' of ' + steps.length + '</div>' +
+            '<div class="tutorial-title">' + step.title + '</div>' +
+            '<div class="tutorial-desc">' + step.desc + '</div>' +
+            '<button class="tutorial-next-btn" id="tutorialNextBtn">' + (isLast ? 'Get started' : 'Next') + '</button>' +
+            '<button class="tutorial-skip" id="tutorialSkipBtn">Skip tutorial</button>';
+
+          // Position tooltip below or above the spotlight
+          var tooltipWidth = 280;
+          var spotBottom = rect.bottom + sp + 12;
+          var spotTop = rect.top - sp - 12;
+          var vpHeight = window.innerHeight;
+          var vpWidth = window.innerWidth;
+
+          // Prefer below, but if not enough room, go above
+          if (spotBottom + 200 < vpHeight) {
+            tooltip.style.top = spotBottom + 'px';
+            tooltip.style.bottom = 'auto';
+          } else {
+            tooltip.style.top = 'auto';
+            tooltip.style.bottom = (vpHeight - spotTop) + 'px';
+          }
+
+          // Center horizontally relative to spotlight, but clamp to viewport
+          var centerX = rect.left + rect.width / 2 - tooltipWidth / 2;
+          centerX = Math.max(12, Math.min(centerX, vpWidth - tooltipWidth - 12));
+          tooltip.style.left = centerX + 'px';
+
+          // Show tooltip with animation
+          tooltip.classList.remove('visible');
+          requestAnimationFrame(function() {
+            tooltip.classList.add('visible');
+          });
+
+          // Bind events
+          document.getElementById('tutorialNextBtn').onclick = function(e) {
+            e.stopPropagation();
+            if (isLast) {
+              finishTutorial();
+            } else {
+              currentStep++;
+              tooltip.classList.remove('visible');
+              setTimeout(function() { positionStep(currentStep); }, 200);
+            }
+          };
+          document.getElementById('tutorialSkipBtn').onclick = function(e) {
+            e.stopPropagation();
+            finishTutorial();
+          };
+        }, 350);
+      }
+
+      function finishTutorial() {
+        localStorage.setItem('kira_tutorial_done', 'true');
+        overlay.style.transition = 'opacity 0.4s ease';
+        overlay.classList.remove('active');
+        setTimeout(function() {
+          if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        }, 450);
+      }
+
+      function startTutorial() {
+        createTutorialDOM();
+        requestAnimationFrame(function() {
+          overlay.classList.add('active');
+          positionStep(0);
+        });
+      }
+
+      // Start 1 second after page load
+      setTimeout(startTutorial, 1000);
+    })();
   </script>
 </body>
 

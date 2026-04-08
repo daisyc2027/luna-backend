@@ -235,6 +235,42 @@
       margin-left: 8px;
     }
 
+    /* Toggle switch */
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 46px;
+      height: 26px;
+      flex-shrink: 0;
+      margin-left: 8px;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0.12);
+      border-radius: 26px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: white;
+      left: 3px;
+      top: 3px;
+      transition: transform 0.3s;
+    }
+    .toggle-switch input:checked + .toggle-slider {
+      background: var(--lavender);
+    }
+    .toggle-switch input:checked + .toggle-slider::before {
+      transform: translateX(20px);
+    }
+
     /* Edit profile panel */
     .edit-panel {
       max-height: 0;
@@ -590,6 +626,42 @@
         </div>
       </div>
 
+      <!-- Notifications -->
+      <div class="section-group">
+        <div class="section-label">Notifications</div>
+        <div class="section-card">
+          <div class="settings-row">
+            <div class="row-label">Morning check-in</div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="notifMorning" onchange="saveNotifPrefs()">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="settings-row">
+            <div class="row-label">Sleep reminder</div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="notifSleep" onchange="saveNotifPrefs()">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="settings-row">
+            <div class="row-label">Water reminder</div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="notifWater" onchange="saveNotifPrefs()">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="settings-row">
+            <div class="row-label">Period prediction</div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="notifPeriod" onchange="saveNotifPrefs()" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.25);padding:8px 4px 0;">Notification delivery depends on your device settings</div>
+      </div>
+
       <!-- Data -->
       <div class="section-group">
         <div class="section-label">Data</div>
@@ -865,6 +937,32 @@
         }
       });
     });
+
+    // ── Notification preferences ──
+    function loadNotifPrefs() {
+      var prefs = JSON.parse(localStorage.getItem('kira_notif_prefs') || '{}');
+      document.getElementById('notifMorning').checked = prefs.morning || false;
+      document.getElementById('notifSleep').checked = prefs.sleep || false;
+      document.getElementById('notifWater').checked = prefs.water || false;
+      document.getElementById('notifPeriod').checked = prefs.period !== false; // default on
+    }
+
+    function saveNotifPrefs() {
+      var prefs = {
+        morning: document.getElementById('notifMorning').checked,
+        sleep: document.getElementById('notifSleep').checked,
+        water: document.getElementById('notifWater').checked,
+        period: document.getElementById('notifPeriod').checked
+      };
+      localStorage.setItem('kira_notif_prefs', JSON.stringify(prefs));
+
+      // Signal App Inventor so it can set up/cancel alarms
+      try {
+        window.AppInventor.setWebViewString('notif_prefs:' + JSON.stringify(prefs));
+      } catch(e) {}
+    }
+
+    loadNotifPrefs();
 
     // ── Navigation ──
     function goBack() {

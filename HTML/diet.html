@@ -435,6 +435,64 @@
       color: white;
     }
 
+    /* Water intake */
+    .water-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .water-goal {
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+      margin-bottom: 12px;
+      text-align: center;
+    }
+    .water-track { text-align: center; }
+    .water-cups {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .water-cup {
+      width: 38px;
+      height: 44px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      cursor: pointer;
+      transition: all 0.2s;
+      opacity: 0.4;
+    }
+    .water-cup.filled {
+      background: rgba(130,180,230,0.2);
+      border-color: rgba(130,180,230,0.4);
+      opacity: 1;
+    }
+    .water-cup:active { transform: scale(0.9); }
+    .water-total {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px;
+      font-weight: 300;
+      font-style: italic;
+      color: var(--lavender);
+    }
+    .water-hint {
+      font-size: 11px;
+      color: rgba(255,255,255,0.3);
+      text-align: center;
+      margin-top: 8px;
+    }
+
     /* Submit button */
     .submit-btn {
       width: 100%;
@@ -767,6 +825,17 @@
           <div class="feel-pill" data-feel="heavy" onclick="selectFeel(this)">Heavy &#128532;</div>
         </div>
 
+        <!-- Water Intake -->
+        <div class="section-label" style="animation-delay:0.14s;">Water intake</div>
+        <div class="water-card">
+          <div class="water-goal" id="waterGoal">Goal: 2.0L</div>
+          <div class="water-track">
+            <div class="water-cups" id="waterCups"></div>
+            <div class="water-total" id="waterTotal">0 / 2.0L</div>
+          </div>
+          <div class="water-hint" id="waterHint">Tap glasses to log — your goal is based on your cycle phase</div>
+        </div>
+
         <!-- Submit -->
         <button class="submit-btn" id="submitBtn" disabled onclick="submitLog()">Get Kira's insight</button>
       </div>
@@ -820,6 +889,72 @@
     var selectedFeel = '';
     var submitting = false;
     var recentEntries = [];
+    var waterCount = 0;
+
+    // Water intake — phase-based recommendations (in litres)
+    var waterGoals = {
+      menstrual: 2.0,
+      follicular: 2.0,
+      ovulatory: 2.5,
+      luteal: 2.5
+    };
+    var waterCupSize = 0.25; // 250ml per cup
+
+    function initWater() {
+      var goal = waterGoals[currentPhase] || 2.0;
+      var totalCups = Math.round(goal / waterCupSize);
+      document.getElementById('waterGoal').textContent = 'Goal: ' + goal.toFixed(1) + 'L \u00b7 ' + totalCups + ' glasses';
+
+      // Load today's water from localStorage
+      var todayKey = 'kira_water_' + USER_ID + '_' + new Date().toISOString().slice(0,10);
+      waterCount = parseInt(localStorage.getItem(todayKey)) || 0;
+
+      var cupsHtml = '';
+      for (var i = 0; i < totalCups; i++) {
+        cupsHtml += '<div class="water-cup' + (i < waterCount ? ' filled' : '') + '" data-idx="' + i + '" onclick="tapWaterCup(' + i + ')">💧</div>';
+      }
+      document.getElementById('waterCups').innerHTML = cupsHtml;
+      updateWaterTotal(goal, totalCups);
+
+      if (waterCount > 0) {
+        document.getElementById('waterHint').textContent = 'Keep going! Tap to add or remove glasses.';
+      }
+    }
+
+    function tapWaterCup(idx) {
+      var goal = waterGoals[currentPhase] || 2.0;
+      var totalCups = Math.round(goal / waterCupSize);
+
+      if (idx < waterCount) {
+        // Unfill from this cup onwards
+        waterCount = idx;
+      } else {
+        // Fill up to and including this cup
+        waterCount = idx + 1;
+      }
+
+      // Save to localStorage
+      var todayKey = 'kira_water_' + USER_ID + '_' + new Date().toISOString().slice(0,10);
+      localStorage.setItem(todayKey, String(waterCount));
+
+      // Update UI
+      var cups = document.querySelectorAll('.water-cup');
+      for (var i = 0; i < cups.length; i++) {
+        cups[i].classList.toggle('filled', i < waterCount);
+      }
+      updateWaterTotal(goal, totalCups);
+
+      if (waterCount >= totalCups) {
+        document.getElementById('waterHint').textContent = 'Goal reached! Great job staying hydrated \u2728';
+      } else if (waterCount > 0) {
+        document.getElementById('waterHint').textContent = (totalCups - waterCount) + ' more to reach your goal';
+      }
+    }
+
+    function updateWaterTotal(goal, totalCups) {
+      var litres = (waterCount * waterCupSize).toFixed(1);
+      document.getElementById('waterTotal').textContent = litres + ' / ' + goal.toFixed(1) + 'L';
+    }
 
     var phaseEmojis = {
       menstrual: '\uD83C\uDF19',
@@ -917,6 +1052,7 @@
         .finally(function() {
           renderPhaseBanner();
           renderChips();
+          initWater();
           hideLoading();
         });
     }

@@ -363,76 +363,95 @@
       margin-bottom: 32px;
     }
 
-    .rating-label {
-      font-size: 15px;
-      color: rgba(255, 255, 255, 0.6);
-      margin-bottom: 16px;
+    /* ── Rating Overlay ── */
+    .rating-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 200;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
     }
-
-    .stars {
+    .rating-overlay.visible { opacity: 1; pointer-events: auto; }
+    .rating-sheet {
+      background: #3a2a45;
+      border-radius: 24px 24px 0 0;
+      padding: 28px 24px 36px;
+      width: 100%;
+      max-width: 420px;
+      transform: translateY(100%);
+      transition: transform 0.35s ease;
+      text-align: center;
+    }
+    .rating-overlay.visible .rating-sheet { transform: translateY(0); }
+    .rating-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px;
+      font-weight: 300;
+      font-style: italic;
+      color: white;
+      margin-bottom: 6px;
+    }
+    .rating-sub {
+      font-size: 13px;
+      color: rgba(255,255,255,0.4);
+      margin-bottom: 20px;
+    }
+    .rating-stars {
       display: flex;
       gap: 10px;
-      margin-bottom: 28px;
+      justify-content: center;
+      margin-bottom: 24px;
     }
-
-    .star-btn {
+    .rating-star {
       width: 48px;
       height: 48px;
       border-radius: 50%;
-      border: 1px solid var(--border);
-      background: var(--card);
-      color: rgba(255, 255, 255, 0.4);
-      font-size: 22px;
-      cursor: pointer;
+      background: rgba(255,255,255,0.09);
+      border: 1px solid rgba(255,255,255,0.14);
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+      font-size: 22px;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: rgba(255,255,255,0.3);
     }
-
-    .star-btn.filled {
-      background: rgba(232, 165, 176, 0.2);
-      border-color: var(--rose);
-      color: var(--rose);
+    .rating-star.lit {
+      background: rgba(232,165,176,0.2);
+      border-color: rgba(232,165,176,0.4);
+      color: #e8a5b0;
     }
-
-    .star-btn:active {
-      transform: scale(0.92);
-    }
-
-    .submit-rating-btn {
-      padding: 14px 44px;
-      border-radius: 30px;
-      border: 1px solid var(--rose);
-      background: rgba(232, 165, 176, 0.18);
-      color: var(--blush);
+    .rating-star:active { transform: scale(0.9); }
+    .rating-submit-btn {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #c9b8e8, #e8a5b0);
       font-family: 'DM Sans', sans-serif;
       font-size: 15px;
+      font-weight: 500;
+      color: white;
       cursor: pointer;
-      min-height: 44px;
-      min-width: 44px;
-      transition: opacity 0.2s ease;
+      min-height: 50px;
+      transition: transform 0.15s, opacity 0.3s;
+      opacity: 0.35;
+    }
+    .rating-submit-btn.enabled { opacity: 1; }
+    .rating-submit-btn:active { transform: scale(0.97); }
+    .rating-skip {
+      margin-top: 14px;
+      font-size: 13px;
+      color: rgba(255,255,255,0.3);
+      cursor: pointer;
+      padding: 8px;
     }
 
-    .submit-rating-btn:active {
-      opacity: 0.7;
-    }
-
-    .submit-rating-btn:disabled {
-      opacity: 0.3;
-      cursor: default;
-    }
-
-    /* ── Thank-you screen ── */
-    .thankyou-msg {
-      font-family: 'Cormorant Garamond', serif;
-      font-style: italic;
-      font-weight: 300;
-      font-size: 24px;
-      color: var(--lavender);
-      text-align: center;
-      line-height: 1.5;
-    }
     /* ── Exit Confirm Dialog ── */
     .dialog-overlay {
       position: fixed;
@@ -533,19 +552,22 @@
         <button class="stop-btn" onclick="stopSession()">Stop early</button>
       </div>
 
-      <!-- Screen 3: Completion + Rating -->
+      <!-- Screen 3: Completion -->
       <div class="screen" id="screenComplete">
         <div class="completion-msg">You did it.<br>Take a deep breath.</div>
-        <div class="rating-label">Did this help?</div>
-        <div class="stars" id="starsContainer"></div>
-        <button class="submit-rating-btn" id="submitRatingBtn" disabled onclick="submitRating()">Submit</button>
       </div>
 
-      <!-- Screen 4: Thank You -->
-      <div class="screen" id="screenThanks">
-        <div class="thankyou-msg">Thank you for sharing.<br>Take care of yourself.</div>
-      </div>
+    </div>
+  </div>
 
+  <!-- Rating Overlay -->
+  <div class="rating-overlay" id="ratingOverlay">
+    <div class="rating-sheet">
+      <div class="rating-title">Did this help?</div>
+      <div class="rating-sub">Your feedback helps Kira learn what works for you</div>
+      <div class="rating-stars" id="ratingStars"></div>
+      <button class="rating-submit-btn" id="ratingSubmitBtn" onclick="submitRating()">Submit</button>
+      <div class="rating-skip" onclick="skipRating()">Skip</div>
     </div>
   </div>
 
@@ -559,7 +581,8 @@
     var canVibrate = typeof navigator.vibrate === 'function';
 
     var selectedMode = null;   // 'calm' or 'energy'
-    var rating = 0;
+    var selectedRating = 0;
+    var startTime = Date.now();
     var timerInterval = null;
     var vibrationInterval = null;
     var secondsLeft = 120;
@@ -658,8 +681,6 @@
 
     // ── Vibration ──
     function startVibration() {
-      if (!canVibrate) return;
-
       // Calm: vibrate([500,300,500,300,500]) = 2100ms total
       // Energy: vibrate([200,100,200,100,200,100,200]) = 1100ms total
       var calmPattern = [500, 300, 500, 300, 500];
@@ -669,13 +690,21 @@
       var patternDuration = 0;
       for (var i = 0; i < pattern.length; i++) patternDuration += pattern[i];
 
-      // Fire immediately
-      navigator.vibrate(pattern);
-
-      // Repeat pattern
-      vibrationInterval = setInterval(function () {
+      if (canVibrate) {
+        // Web Vibration API available
         navigator.vibrate(pattern);
-      }, patternDuration + 200); // small gap between repeats
+        vibrationInterval = setInterval(function () {
+          navigator.vibrate(pattern);
+        }, patternDuration + 200);
+      } else {
+        // Fallback: signal App Inventor to vibrate natively
+        try {
+          window.AppInventor.setWebViewString('vibrate:' + selectedMode);
+          vibrationInterval = setInterval(function () {
+            try { window.AppInventor.setWebViewString('vibrate:' + selectedMode); } catch(e) {}
+          }, patternDuration + 200);
+        } catch(e) {}
+      }
     }
 
     function stopVibration() {
@@ -685,6 +714,8 @@
       }
       if (canVibrate) {
         navigator.vibrate(0);
+      } else {
+        try { window.AppInventor.setWebViewString('vibrate:stop'); } catch(e) {}
       }
     }
 
@@ -716,78 +747,72 @@
     }
 
     function showCompletionScreen() {
-      rating = 0;
-      buildStars();
-      document.getElementById('submitRatingBtn').disabled = true;
       showScreen('screenComplete');
+      setTimeout(function() { showRatingPopup(); }, 1200);
     }
 
-    // ── Rating stars ──
-    function buildStars() {
-      var container = document.getElementById('starsContainer');
-      container.innerHTML = '';
+    // ── Rating Popup ──
+    function showRatingPopup() {
+      var starsEl = document.getElementById('ratingStars');
+      starsEl.innerHTML = '';
       for (var i = 1; i <= 5; i++) {
-        var btn = document.createElement('button');
-        btn.className = 'star-btn';
-        btn.textContent = '\u2605';
-        btn.setAttribute('data-value', i);
-        btn.addEventListener('click', function () {
-          setRating(parseInt(this.getAttribute('data-value')));
-        });
-        container.appendChild(btn);
+        var star = document.createElement('div');
+        star.className = 'rating-star';
+        star.textContent = '\u2605';
+        star.dataset.value = i;
+        star.onclick = (function(val) {
+          return function() { selectStar(val); };
+        })(i);
+        starsEl.appendChild(star);
       }
+      selectedRating = 0;
+      document.getElementById('ratingSubmitBtn').classList.remove('enabled');
+      document.getElementById('ratingOverlay').classList.add('visible');
     }
 
-    function setRating(value) {
-      rating = value;
-      var btns = document.querySelectorAll('.star-btn');
-      for (var i = 0; i < btns.length; i++) {
-        if (parseInt(btns[i].getAttribute('data-value')) <= value) {
-          btns[i].classList.add('filled');
-        } else {
-          btns[i].classList.remove('filled');
-        }
-      }
-      document.getElementById('submitRatingBtn').disabled = false;
+    function selectStar(val) {
+      selectedRating = val;
+      var stars = document.querySelectorAll('.rating-star');
+      stars.forEach(function(s, idx) {
+        s.classList.toggle('lit', idx < val);
+      });
+      document.getElementById('ratingSubmitBtn').classList.add('enabled');
     }
 
-    // ── Submit rating ──
-    function submitRating() {
-      if (rating === 0) return;
-
+    function getRatingPayload() {
+      var elapsed = Math.round((Date.now() - startTime) / 1000);
       var interventionId = selectedMode === 'calm' ? 'haptic_calm' : 'haptic_energise';
       var interventionName = selectedMode === 'calm' ? 'Calm Reset' : 'Energy Pulse';
-
-      var payload = {
+      return {
         intervention_id: interventionId,
         intervention_name: interventionName,
         intervention_type: 'haptic',
-        rating: rating,
+        rating: selectedRating,
         phase: 'unknown',
         cycle_day: 0,
-        duration_seconds: 120,
+        duration_seconds: elapsed,
         user_id: USER_ID
       };
+    }
 
-      document.getElementById('submitRatingBtn').disabled = true;
-
+    function submitRating() {
+      if (!selectedRating) return;
       fetch(BACKEND + '/rate_intervention', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      }).then(function () {
-        showThanks();
-      }).catch(function () {
-        // Still allow exit on error
-        showThanks();
-      });
+        body: JSON.stringify(getRatingPayload())
+      }).catch(function() {});
+      document.getElementById('ratingOverlay').classList.remove('visible');
+      setTimeout(function() {
+        window.AppInventor.setWebViewString('navigate:interventions');
+      }, 400);
     }
 
-    function showThanks() {
-      showScreen('screenThanks');
-      setTimeout(function () {
-        window.AppInventor.setWebViewString('navigate:back');
-      }, 2200);
+    function skipRating() {
+      document.getElementById('ratingOverlay').classList.remove('visible');
+      setTimeout(function() {
+        window.AppInventor.setWebViewString('navigate:interventions');
+      }, 400);
     }
 
     // ── Exit ──
@@ -803,7 +828,7 @@
         clearInterval(timerInterval);
         timerInterval = null;
       }
-      window.AppInventor.setWebViewString('navigate:back');
+      window.AppInventor.setWebViewString('navigate:interventions');
     }
   </script>
 

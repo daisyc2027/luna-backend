@@ -253,6 +253,79 @@
     }
 
     /* Hours Stepper */
+    /* Mode toggle */
+    .mode-toggle {
+      display: flex;
+      gap: 4px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 12px;
+      padding: 3px;
+      margin-bottom: 20px;
+    }
+    .mode-btn {
+      flex: 1;
+      padding: 8px 0;
+      text-align: center;
+      font-size: 12px;
+      color: rgba(255,255,255,0.4);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.25s;
+      font-family: 'DM Sans', sans-serif;
+      min-height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .mode-btn.active {
+      background: rgba(201,184,232,0.2);
+      color: var(--lavender);
+    }
+
+    /* Time inputs */
+    .time-inputs {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+    .time-group { text-align: center; }
+    .time-label {
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.35);
+      margin-bottom: 8px;
+    }
+    .time-input {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 16px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 18px;
+      color: white;
+      outline: none;
+      color-scheme: dark;
+      min-height: 48px;
+      text-align: center;
+    }
+    .time-input:focus { border-color: rgba(201,184,232,0.4); }
+    .time-arrow {
+      font-size: 18px;
+      color: rgba(255,255,255,0.3);
+      margin-top: 18px;
+    }
+    .calculated-hours {
+      text-align: center;
+      margin-top: 16px;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 36px;
+      font-weight: 300;
+      font-style: italic;
+      color: var(--lavender);
+    }
+
     .stepper-row {
       display: flex;
       align-items: center;
@@ -704,10 +777,32 @@
       <!-- Hours Slept -->
       <div class="card fade-up fade-up-2">
         <div class="card-label">How many hours did you sleep?</div>
-        <div class="stepper-row">
-          <button class="stepper-btn" id="btnMinus" onclick="adjustHours(-0.5)">&#8722;</button>
-          <div class="hours-display" id="hoursDisplay">7<span class="hours-unit">hrs</span></div>
-          <button class="stepper-btn" id="btnPlus" onclick="adjustHours(0.5)">+</button>
+        <div class="mode-toggle">
+          <div class="mode-btn active" id="modeManual" onclick="setInputMode('manual')">Manual</div>
+          <div class="mode-btn" id="modeTime" onclick="setInputMode('time')">Bedtime &amp; wake</div>
+        </div>
+        <!-- Manual mode -->
+        <div id="manualMode">
+          <div class="stepper-row">
+            <button class="stepper-btn" id="btnMinus" onclick="adjustHours(-0.5)">&#8722;</button>
+            <div class="hours-display" id="hoursDisplay">7<span class="hours-unit">hrs</span></div>
+            <button class="stepper-btn" id="btnPlus" onclick="adjustHours(0.5)">+</button>
+          </div>
+        </div>
+        <!-- Time mode -->
+        <div id="timeMode" style="display:none;">
+          <div class="time-inputs">
+            <div class="time-group">
+              <div class="time-label">Went to bed</div>
+              <input type="time" class="time-input" id="bedtimeInput" value="23:00" onchange="calculateFromTimes()">
+            </div>
+            <div class="time-arrow">&#8594;</div>
+            <div class="time-group">
+              <div class="time-label">Woke up</div>
+              <input type="time" class="time-input" id="waketimeInput" value="07:00" onchange="calculateFromTimes()">
+            </div>
+          </div>
+          <div class="calculated-hours" id="calculatedHours">8 hrs</div>
         </div>
       </div>
 
@@ -754,7 +849,7 @@
         <div class="result-divider"></div>
         <div class="result-tip-label">Tonight, try:</div>
         <div class="result-tip" id="resultTip"></div>
-        <button class="reset-btn" onclick="resetForm()">Log another</button>
+        <button class="reset-btn" onclick="resetForm()">Update today's log</button>
       </div>
 
       <!-- Recent Logs -->
@@ -823,6 +918,39 @@
     function showPage() {
       document.getElementById('loadingScreen').classList.add('hidden');
       document.getElementById('pageWrapper').classList.add('visible');
+    }
+
+    // Input mode toggle
+    var inputMode = 'manual';
+    function setInputMode(mode) {
+      inputMode = mode;
+      document.getElementById('manualMode').style.display = mode === 'manual' ? '' : 'none';
+      document.getElementById('timeMode').style.display = mode === 'time' ? '' : 'none';
+      document.getElementById('modeManual').classList.toggle('active', mode === 'manual');
+      document.getElementById('modeTime').classList.toggle('active', mode === 'time');
+      if (mode === 'time') calculateFromTimes();
+    }
+
+    function calculateFromTimes() {
+      var bed = document.getElementById('bedtimeInput').value;
+      var wake = document.getElementById('waketimeInput').value;
+      if (!bed || !wake) return;
+
+      var bedParts = bed.split(':');
+      var wakeParts = wake.split(':');
+      var bedMin = parseInt(bedParts[0]) * 60 + parseInt(bedParts[1]);
+      var wakeMin = parseInt(wakeParts[0]) * 60 + parseInt(wakeParts[1]);
+
+      var diff = wakeMin - bedMin;
+      if (diff <= 0) diff += 24 * 60; // crossed midnight
+
+      var hrs = Math.round(diff / 30) * 0.5; // round to nearest 0.5
+      hrs = Math.max(0, Math.min(12, hrs));
+      currentHours = hrs;
+      updateHoursDisplay();
+
+      var numStr = hrs % 1 === 0 ? String(hrs) : hrs.toFixed(1);
+      document.getElementById('calculatedHours').textContent = numStr + ' hrs';
     }
 
     // Hours stepper

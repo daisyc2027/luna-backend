@@ -358,80 +358,93 @@
       }
     }
 
-    /* ── Rating ── */
-    .rating-section {
-      opacity: 0;
-      animation: fadeUp 0.6s 0.8s ease forwards;
-      text-align: center;
-    }
-
-    .rating-prompt {
-      font-size: 14px;
-      font-weight: 300;
-      color: rgba(255, 255, 255, 0.55);
-      letter-spacing: 1px;
-      margin-bottom: 16px;
-    }
-
-    .stars-row {
+    /* ── Rating Overlay ── */
+    .rating-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 200;
       display: flex;
-      gap: 12px;
-      justify-content: center;
-    }
-
-    .star-btn {
-      width: 48px;
-      height: 48px;
-      min-width: 44px;
-      min-height: 44px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 50%;
-      font-size: 22px;
-      cursor: pointer;
-      transition: background 0.25s ease, border-color 0.25s ease, transform 0.15s ease;
-      -webkit-tap-highlight-color: transparent;
-      color: rgba(255, 255, 255, 0.35);
-    }
-
-    .star-btn:active {
-      transform: scale(0.92);
-    }
-
-    .star-btn.selected {
-      background: rgba(201, 184, 232, 0.25);
-      border-color: var(--lavender);
-      color: var(--lavender);
-    }
-
-    /* ── Thank You ── */
-    .thank-you {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      align-items: center;
+      align-items: flex-end;
       justify-content: center;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.5s ease;
+      transition: opacity 0.3s ease;
     }
-
-    .thank-you.visible {
-      opacity: 1;
+    .rating-overlay.visible { opacity: 1; pointer-events: auto; }
+    .rating-sheet {
+      background: #3a2a45;
+      border-radius: 24px 24px 0 0;
+      padding: 28px 24px 36px;
+      width: 100%;
+      max-width: 420px;
+      transform: translateY(100%);
+      transition: transform 0.35s ease;
+      text-align: center;
     }
-
-    .thank-you-text {
+    .rating-overlay.visible .rating-sheet { transform: translateY(0); }
+    .rating-title {
       font-family: 'Cormorant Garamond', serif;
-      font-style: italic;
-      font-size: 24px;
+      font-size: 22px;
       font-weight: 300;
-      color: var(--blush);
+      font-style: italic;
+      color: white;
+      margin-bottom: 6px;
+    }
+    .rating-sub {
+      font-size: 13px;
+      color: rgba(255,255,255,0.4);
+      margin-bottom: 20px;
+    }
+    .rating-stars {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 24px;
+    }
+    .rating-star {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.09);
+      border: 1px solid rgba(255,255,255,0.14);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: rgba(255,255,255,0.3);
+    }
+    .rating-star.lit {
+      background: rgba(232,165,176,0.2);
+      border-color: rgba(232,165,176,0.4);
+      color: #e8a5b0;
+    }
+    .rating-star:active { transform: scale(0.9); }
+    .rating-submit-btn {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #c9b8e8, #e8a5b0);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      color: white;
+      cursor: pointer;
+      min-height: 50px;
+      transition: transform 0.15s, opacity 0.3s;
+      opacity: 0.35;
+    }
+    .rating-submit-btn.enabled { opacity: 1; }
+    .rating-submit-btn:active { transform: scale(0.97); }
+    .rating-skip {
+      margin-top: 14px;
+      font-size: 13px;
+      color: rgba(255,255,255,0.3);
+      cursor: pointer;
+      padding: 8px;
     }
 
     /* ── Confirm Dialog ── */
@@ -576,16 +589,18 @@
       <div class="completion-card" id="completion">
         <div class="completion-icon">&#10022;</div>
         <div class="completion-text">You're grounded.<br>Take a breath.</div>
-        <div class="rating-section">
-          <div class="rating-prompt">Did grounding help?</div>
-          <div class="stars-row" id="starsRow"></div>
-        </div>
       </div>
+    </div>
+  </div>
 
-      <!-- Thank You -->
-      <div class="thank-you" id="thankYou">
-        <div class="thank-you-text">Thank you</div>
-      </div>
+  <!-- Rating Overlay -->
+  <div class="rating-overlay" id="ratingOverlay">
+    <div class="rating-sheet">
+      <div class="rating-title">Did this help?</div>
+      <div class="rating-sub">Your feedback helps Kira learn what works for you</div>
+      <div class="rating-stars" id="ratingStars"></div>
+      <button class="rating-submit-btn" id="ratingSubmitBtn" onclick="submitRating()">Submit</button>
+      <div class="rating-skip" onclick="skipRating()">Skip</div>
     </div>
   </div>
 
@@ -648,20 +663,7 @@
       }
     });
 
-    // Build star buttons
-    var starsRow = document.getElementById('starsRow');
-    for (var s = 1; s <= 5; s++) {
-      var btn = document.createElement('div');
-      btn.className = 'star-btn';
-      btn.setAttribute('role', 'button');
-      btn.setAttribute('aria-label', s + ' star');
-      btn.innerHTML = '&#9733;';
-      btn.dataset.value = s;
-      btn.addEventListener('click', function () {
-        submitRating(parseInt(this.dataset.value));
-      });
-      starsRow.appendChild(btn);
-    }
+    var selectedRating = 0;
 
     function checkStepComplete(stepIdx) {
       var inputs = document.querySelectorAll('#pills-' + stepIdx + ' .pill-input');
@@ -698,54 +700,70 @@
         // Slide next step in
         document.getElementById('step-' + currentStep).classList.add('current');
       } else {
-        // Show completion
+        // Show completion then rating popup
         document.getElementById('completion').classList.add('current');
+        setTimeout(function() { showRatingPopup(); }, 1500);
       }
     }
 
-    function submitRating(rating) {
-      // Highlight selected stars
-      var stars = starsRow.children;
-      for (var i = 0; i < stars.length; i++) {
-        if (i < rating) {
-          stars[i].classList.add('selected');
-        } else {
-          stars[i].classList.remove('selected');
-        }
+    function showRatingPopup() {
+      var starsEl = document.getElementById('ratingStars');
+      starsEl.innerHTML = '';
+      for (var i = 1; i <= 5; i++) {
+        var star = document.createElement('div');
+        star.className = 'rating-star';
+        star.textContent = '\u2605';
+        star.dataset.value = i;
+        star.onclick = (function(val) {
+          return function() { selectStar(val); };
+        })(i);
+        starsEl.appendChild(star);
       }
+      selectedRating = 0;
+      document.getElementById('ratingSubmitBtn').classList.remove('enabled');
+      document.getElementById('ratingOverlay').classList.add('visible');
+    }
 
+    function selectStar(val) {
+      selectedRating = val;
+      var stars = document.querySelectorAll('.rating-star');
+      stars.forEach(function(s, idx) {
+        s.classList.toggle('lit', idx < val);
+      });
+      document.getElementById('ratingSubmitBtn').classList.add('enabled');
+    }
+
+    function getRatingPayload() {
       var elapsed = Math.round((Date.now() - startTime) / 1000);
-
-      var payload = {
+      return {
         intervention_id: '54321',
         intervention_name: '5-4-3-2-1 Grounding',
         intervention_type: 'grounding',
-        rating: rating,
+        rating: selectedRating,
         phase: 'unknown',
         cycle_day: 0,
         duration_seconds: elapsed,
         user_id: USER_ID
       };
+    }
 
-      // POST rating
+    function submitRating() {
+      if (!selectedRating) return;
       fetch(BACKEND + '/rate_intervention', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      }).then(function () {
-        showThankYou();
-      }).catch(function () {
-        // Still allow exit on failure
-        showThankYou();
-      });
+        body: JSON.stringify(getRatingPayload())
+      }).catch(function() {});
+      document.getElementById('ratingOverlay').classList.remove('visible');
+      setTimeout(function() {
+        window.AppInventor.setWebViewString('navigate:interventions');
+      }, 400);
     }
 
-    function showThankYou() {
-      setTimeout(function () {
-        document.getElementById('thankYou').classList.add('visible');
-        setTimeout(function () {
-          doExit();
-        }, 1500);
+    function skipRating() {
+      document.getElementById('ratingOverlay').classList.remove('visible');
+      setTimeout(function() {
+        window.AppInventor.setWebViewString('navigate:interventions');
       }, 400);
     }
 
@@ -758,7 +776,7 @@
     }
 
     function doExit() {
-      window.AppInventor.setWebViewString('navigate:back');
+      window.AppInventor.setWebViewString('navigate:interventions');
     }
 
     // ── Prevent body scroll ──

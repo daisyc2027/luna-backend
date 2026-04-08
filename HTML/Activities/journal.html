@@ -514,102 +514,93 @@
       animation-delay: 0.4s;
     }
 
-    /* ── Rating ── */
-    .rating-section {
-      opacity: 0;
-      transform: translateY(12px);
-      animation: fade-up 0.6s ease forwards;
-      animation-delay: 0.7s;
-    }
-
-    .rating-label {
-      font-size: 13px;
-      font-weight: 300;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      color: rgba(255, 255, 255, 0.5);
-      margin-bottom: 16px;
-    }
-
-    .stars-row {
-      display: flex;
-      gap: 12px;
-      justify-content: center;
-      margin-bottom: 28px;
-    }
-
-    .star-btn {
-      width: 48px;
-      height: 48px;
-      border: none;
-      background: none;
-      cursor: pointer;
-      font-size: 26px;
-      transition: transform 0.2s ease, opacity 0.2s ease;
-      opacity: 0.3;
-      padding: 0;
-    }
-
-    .star-btn.lit {
-      opacity: 1;
-      transform: scale(1.1);
-    }
-
-    .star-btn:active {
-      transform: scale(0.9);
-    }
-
-    .rating-submit {
-      display: inline-block;
-      padding: 12px 36px;
-      border: none;
-      border-radius: 12px;
-      background: linear-gradient(135deg, var(--lavender), var(--rose));
-      font-family: 'DM Sans', sans-serif;
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--deep);
-      cursor: pointer;
-      transition: transform 0.15s ease, opacity 0.3s ease;
-      opacity: 0.35;
-    }
-
-    .rating-submit.enabled {
-      opacity: 1;
-    }
-
-    .rating-submit:active {
-      transform: scale(0.95);
-    }
-
-    /* ── Thank You ── */
-    .thank-you-screen {
+    /* ── Rating Overlay ── */
+    .rating-overlay {
       position: fixed;
       inset: 0;
-      background: var(--deep);
-      z-index: 90;
+      background: rgba(0,0,0,0.5);
+      z-index: 200;
       display: flex;
-      align-items: center;
+      align-items: flex-end;
       justify-content: center;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.5s ease;
+      transition: opacity 0.3s ease;
     }
-
-    .thank-you-screen.visible {
-      opacity: 1;
-      pointer-events: auto;
+    .rating-overlay.visible { opacity: 1; pointer-events: auto; }
+    .rating-sheet {
+      background: #3a2a45;
+      border-radius: 24px 24px 0 0;
+      padding: 28px 24px 36px;
+      width: 100%;
+      max-width: 420px;
+      transform: translateY(100%);
+      transition: transform 0.35s ease;
+      text-align: center;
     }
-
-    .thank-you-text {
+    .rating-overlay.visible .rating-sheet { transform: translateY(0); }
+    .rating-title {
       font-family: 'Cormorant Garamond', serif;
-      font-style: italic;
+      font-size: 22px;
       font-weight: 300;
-      font-size: 28px;
-      color: var(--blush);
-      opacity: 0;
-      animation: fade-up 0.6s ease forwards;
-      animation-delay: 0.2s;
+      font-style: italic;
+      color: white;
+      margin-bottom: 6px;
+    }
+    .rating-sub {
+      font-size: 13px;
+      color: rgba(255,255,255,0.4);
+      margin-bottom: 20px;
+    }
+    .rating-stars {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 24px;
+    }
+    .rating-star {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.09);
+      border: 1px solid rgba(255,255,255,0.14);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: rgba(255,255,255,0.3);
+    }
+    .rating-star.lit {
+      background: rgba(232,165,176,0.2);
+      border-color: rgba(232,165,176,0.4);
+      color: #e8a5b0;
+    }
+    .rating-star:active { transform: scale(0.9); }
+    .rating-submit-btn {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #c9b8e8, #e8a5b0);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      color: white;
+      cursor: pointer;
+      min-height: 50px;
+      transition: transform 0.15s, opacity 0.3s;
+      opacity: 0.35;
+    }
+    .rating-submit-btn.enabled { opacity: 1; }
+    .rating-submit-btn:active { transform: scale(0.97); }
+    .rating-skip {
+      margin-top: 14px;
+      font-size: 13px;
+      color: rgba(255,255,255,0.3);
+      cursor: pointer;
+      padding: 8px;
     }
 
     /* ── Error Message ── */
@@ -826,17 +817,18 @@
     <div class="completion-content">
       <div class="completion-icon">&#10022;</div>
       <div class="completion-message" id="completionMessage"></div>
-      <div class="rating-section">
-        <div class="rating-label">Did journaling help?</div>
-        <div class="stars-row" id="starsRow"></div>
-        <button class="rating-submit" id="ratingSubmit" onclick="submitRating()">Submit</button>
-      </div>
     </div>
   </div>
 
-  <!-- Thank You Screen -->
-  <div class="thank-you-screen" id="thankYouScreen">
-    <div class="thank-you-text">Thank you for reflecting.</div>
+  <!-- Rating Overlay -->
+  <div class="rating-overlay" id="ratingOverlay">
+    <div class="rating-sheet">
+      <div class="rating-title">Did this help?</div>
+      <div class="rating-sub">Your feedback helps Kira learn what works for you</div>
+      <div class="rating-stars" id="ratingStars"></div>
+      <button class="rating-submit-btn" id="ratingSubmitBtn" onclick="submitRating()">Submit</button>
+      <div class="rating-skip" onclick="skipRating()">Skip</div>
+    </div>
   </div>
 
   <script>
@@ -958,18 +950,6 @@
         dot.style.cursor = 'pointer';
         dot.addEventListener('click', function () { goToPrompt(i); });
         dotsContainer.appendChild(dot);
-      }
-
-      // Build stars
-      const starsRow = document.getElementById('starsRow');
-      starsRow.innerHTML = '';
-      for (let i = 1; i <= 5; i++) {
-        const btn = document.createElement('button');
-        btn.className = 'star-btn';
-        btn.textContent = '\u2605';
-        btn.setAttribute('aria-label', 'Rate ' + i + ' star' + (i > 1 ? 's' : ''));
-        btn.addEventListener('click', function () { selectRating(i); });
-        starsRow.appendChild(btn);
       }
 
       showPrompt(0, false);
@@ -1146,52 +1126,69 @@
       var screen = document.getElementById('completionScreen');
       document.getElementById('completionMessage').textContent = COMPLETION_MESSAGES[currentPhase];
       screen.classList.add('visible');
+      setTimeout(function() { showRatingPopup(); }, 1500);
     }
 
-    // ── Rating ──
-    function selectRating(n) {
-      selectedRating = n;
-      var stars = document.querySelectorAll('.star-btn');
-      stars.forEach(function (s, i) {
-        s.classList.toggle('lit', i < n);
-      });
-      document.getElementById('ratingSubmit').classList.toggle('enabled', n > 0);
-    }
-
-    async function submitRating() {
-      if (selectedRating === 0) return;
-
-      var elapsed = Math.round((Date.now() - sessionStart) / 1000);
-
-      try {
-        var res = await fetch(API + '/rate_intervention', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            intervention_id: 'phase_reflect',
-            intervention_name: 'Phase Reflection',
-            intervention_type: 'journaling',
-            rating: selectedRating,
-            phase: currentPhase,
-            cycle_day: cycleDay,
-            duration_seconds: elapsed,
-            user_id: USER_ID
-          })
-        });
-
-        if (!res.ok) throw new Error('Rating failed');
-      } catch (e) {
-        console.error(e);
+    // ── Rating Popup ──
+    function showRatingPopup() {
+      var starsEl = document.getElementById('ratingStars');
+      starsEl.innerHTML = '';
+      for (var i = 1; i <= 5; i++) {
+        var star = document.createElement('div');
+        star.className = 'rating-star';
+        star.textContent = '\u2605';
+        star.dataset.value = i;
+        star.onclick = (function(val) {
+          return function() { selectStar(val); };
+        })(i);
+        starsEl.appendChild(star);
       }
+      selectedRating = 0;
+      document.getElementById('ratingSubmitBtn').classList.remove('enabled');
+      document.getElementById('ratingOverlay').classList.add('visible');
+    }
 
-      // Show thank you regardless
-      document.getElementById('completionScreen').classList.remove('visible');
-      var ty = document.getElementById('thankYouScreen');
-      ty.classList.add('visible');
+    function selectStar(val) {
+      selectedRating = val;
+      var stars = document.querySelectorAll('.rating-star');
+      stars.forEach(function(s, idx) {
+        s.classList.toggle('lit', idx < val);
+      });
+      document.getElementById('ratingSubmitBtn').classList.add('enabled');
+    }
 
-      setTimeout(function () {
-        window.AppInventor.setWebViewString('navigate:back');
-      }, 2000);
+    function getRatingPayload() {
+      var elapsed = Math.round((Date.now() - sessionStart) / 1000);
+      return {
+        intervention_id: 'phase_reflect',
+        intervention_name: 'Phase Reflection',
+        intervention_type: 'journaling',
+        rating: selectedRating,
+        phase: currentPhase,
+        cycle_day: cycleDay,
+        duration_seconds: elapsed,
+        user_id: USER_ID
+      };
+    }
+
+    function submitRating() {
+      if (!selectedRating) return;
+      fetch(API + '/rate_intervention', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(getRatingPayload())
+      }).catch(function() {});
+      document.getElementById('ratingOverlay').classList.remove('visible');
+      setTimeout(function() {
+        window.AppInventor.setWebViewString('navigate:interventions');
+      }, 400);
+    }
+
+    function skipRating() {
+      document.getElementById('ratingOverlay').classList.remove('visible');
+      setTimeout(function() {
+        window.AppInventor.setWebViewString('navigate:interventions');
+      }, 400);
     }
 
     // ── Exit Handling ──
@@ -1209,7 +1206,7 @@
     }
 
     function exitPage() {
-      window.AppInventor.setWebViewString('navigate:back');
+      window.AppInventor.setWebViewString('navigate:interventions');
     }
 
     // ── Prevent body scroll ──
