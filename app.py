@@ -68,9 +68,10 @@ def get_user_summary(user_id='user_1'):
     }
     if doc.exists:
         data = doc.to_dict()
-        # Ensure intervention_summary exists
-        if 'intervention_summary' not in data:
-            data['intervention_summary'] = base['intervention_summary']
+        # Merge with defaults — ensure all expected keys exist
+        for key in base:
+            if key not in data:
+                data[key] = base[key]
         return data
     return base
 
@@ -1065,6 +1066,64 @@ def insights():
         result['intervention_stats'] = []
 
     return jsonify(result)
+
+
+@app.route('/notification_check', methods=['GET'])
+def notification_check():
+    """App Inventor polls this to know what notifications to show.
+    Returns a list of notification messages relevant right now."""
+    user_id = request.args.get('user_id', 'user_1')
+    hour = datetime.now().hour
+
+    user_doc = db.collection('users').document(user_id).get()
+    user_data = user_doc.to_dict() if user_doc.exists else {}
+
+    notifications = []
+
+    # Morning check-in (7-9am)
+    if 7 <= hour <= 9:
+        notifications.append({
+            "type": "morning",
+            "title": "Good morning ✦",
+            "message": "How are you feeling today? Take a moment to check in.",
+            "action": "navigate:home"
+        })
+
+    # Sleep reminder (21-22 / 9-10pm)
+    if 21 <= hour <= 22:
+        notifications.append({
+            "type": "sleep",
+            "title": "Wind down 🌙",
+            "message": "Ready to log your sleep? Your body will thank you.",
+            "action": "navigate:sleep"
+        })
+
+    # Water reminder (12-13 / noon)
+    if 12 <= hour <= 13:
+        notifications.append({
+            "type": "water",
+            "title": "Stay hydrated 💧",
+            "message": "Have you had enough water today? Check your intake.",
+            "action": "navigate:diet"
+        })
+
+    # Period prediction (if period is coming in 1-2 days)
+    last_period = user_data.get('last_period_date')
+    avg_cycle = user_data.get('average_cycle_length', 28)
+    if last_period:
+        try:
+            cycle_info = calculate_cycle_phase(last_period, avg_cycle)
+            if cycle_info['next_period_in_days'] <= 2:
+                notifications.append({
+                    "type": "period",
+                    "title": "Period approaching",
+                    "message": "Your period is predicted in " + str(cycle_info['next_period_in_days']) + " day(s). Be gentle with yourself.",
+                    "action": "navigate:cycle"
+                })
+        except Exception:
+            pass
+
+    return jsonify({"notifications": notifications})
 
 
 if __name__ == '__main__':
