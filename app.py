@@ -171,75 +171,33 @@ def calculate_average_cycle(period_dates):
 
 # ─── Routes ──────────────────────────────────────────────────
 
-@app.route('/analyze', methods=['POST'])
-def analyze():
+@app.route('/log_checkin', methods=['POST'])
+def log_checkin():
+    """Lightweight daily check-in — just saves emotion data, no AI call."""
     data = request.get_json(force=True)
     if isinstance(data, list):
         data = {item[0]: item[1] for item in data}
 
     user_id = data.get('user_id', 'user_1')
     user_text = data.get('text', '')
+    mood_rating = data.get('mood_rating', 0)
     cycle_phase = data.get('phase', 'unknown')
     cycle_day = data.get('cycle_day', 0)
 
-    # Get user summary for personalization
-    summary = get_user_summary(user_id)
-    
-    summary_text = f"""
-    User's historical patterns:
-    - Most common emotion: {summary['emotion_patterns']['most_common_emotion']}
-    - Highest risk phase: {summary['emotion_patterns']['highest_risk_phase']}
-    - Highest risk days: {summary['emotion_patterns']['highest_risk_days']}
-    - Average sleep: {summary['sleep_patterns']['average_hours']} hours
-    - Most common craving: {summary['diet_patterns']['most_common_craving']}
-    - Interventions that helped before: {summary['effective_interventions']}
-    """
+    # Map mood rating to emotion label
+    mood_map = {1: 'very_low', 2: 'low', 3: 'neutral', 4: 'good', 5: 'great'}
+    emotion = mood_map.get(mood_rating, 'neutral')
 
-    prompt = f"""
-    You are a compassionate mental wellness assistant for a women's health app.
-    
-    The user is currently in their {cycle_phase} phase (day {cycle_day} of their cycle).
-    They have shared: "{user_text}"
-    
-    {summary_text}
-    
-    Use their historical patterns to personalize your response.
-    If you notice they are in their typical high risk window, acknowledge it warmly.
-    If you know which interventions helped them before, prioritize those.
-    
-    Do two things:
-    1. Classify their primary emotional state as ONE of: anxiety, rumination,
-       irritability, craving, low_motivation, shame, social_sensitivity
-    2. Give one short, specific micro-intervention (2-3 sentences max)
-       appropriate for their emotional state, cycle phase, and personal history.
-    
-    Respond in JSON only, no other text:
-    {{
-        "emotion": "emotion_label",
-        "intervention": "your intervention text here",
-        "confidence": 0.0
-    }}
-    """
-
-    response = client.chat.completions.create(
-        model="deepseek-chat",
-        messages=[{"role": "user", "content": prompt}],
-        max_tokens=300
-    )
-
-    result = json.loads(response.choices[0].message.content)
-
-    # Save log to Firebase
     user_collection(user_id, 'emotion_logs').add({
         "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
-        "emotion": result['emotion'],
+        "emotion": emotion,
+        "mood_rating": mood_rating,
         "user_text": user_text,
         "phase": cycle_phase,
-        "cycle_day": cycle_day,
-        "intervention": result['intervention']
+        "cycle_day": cycle_day
     })
 
-    return jsonify(result)
+    return jsonify({"status": "ok", "emotion": emotion})
 
 @app.route('/log_sleep', methods=['POST'])
 def log_sleep():
@@ -297,15 +255,21 @@ def log_sleep():
 
     result['personalised'] = personalised
 
-    # Save to Firebase
-    user_collection(user_id, 'sleep_logs').add({
+    # Save to Firebase — update today's entry if exists, otherwise create new
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    existing = list(user_collection(user_id, 'sleep_logs').where('date', '>=', today_str).where('date', '<', today_str + 'z').limit(1).stream())
+    log_data = {
         "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
         "hours": hours,
         "quality": quality,
         "notes": notes,
         "phase": cycle_phase,
         "cycle_day": cycle_day
-    })
+    }
+    if existing:
+        existing[0].reference.update(log_data)
+    else:
+        user_collection(user_id, 'sleep_logs').add(log_data)
 
     # Update summary
     update_user_summary(user_id)
@@ -638,15 +602,16 @@ def chat():
         'timestamp': firestore.SERVER_TIMESTAMP
     })
 
-    # Save emotion log silently
-    user_collection(user_id, 'emotion_logs').add({
-        "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
-        "emotion": detected_emotion,
-        "user_text": user_message,
-        "phase": cycle_phase,
-        "cycle_day": cycle_day,
-        "intervention": ""
-    })
+    # Save emotion log silently (only if a valid emotion was detected)
+    valid_emotions = ['anxiety', 'rumination', 'irritability', 'craving', 'low_motivation', 'shame', 'social_sensitivity', 'positive']
+    if detected_emotion in valid_emotions:
+        user_collection(user_id, 'emotion_logs').add({
+            "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "emotion": detected_emotion,
+            "user_text": user_message,
+            "phase": cycle_phase,
+            "cycle_day": cycle_day
+        })
 
     # Update user summary periodically
     update_user_summary(user_id)
